@@ -12,3 +12,5 @@
 *.swp
 *__pycache__
 *.csv
+*Train
+*Test

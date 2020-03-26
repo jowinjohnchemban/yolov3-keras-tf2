@@ -35,6 +35,7 @@ def parse_voc_file(file_path, voc_conf):
     Return:
         A list of image annotations.
     """
+    assert os.path.exists(file_path)
     image_data = []
     with open(voc_conf) as json_data:
         tags = json.load(json_data)
@@ -65,24 +66,27 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     Return:
         pandas DataFrame with the annotations.
     """
-    cache_path = os.path.join('Caches', cache_file)
+    assert os.path.exists(folder_path)
+    cache_path = os.path.join('../Caches', cache_file)
     if os.path.exists(cache_path):
         return pd.read_csv(cache_path)
     image_data = []
-    frame_columns = ['Image Path', 'Image Width', 'Image Height', 'Object Name', 'X_min', 'Y_min', 'X_max', 'Y_max']
+    frame_columns = [
+        'Image Path', 'Image Width', 'Image Height', 'Object Name', 'X_min', 'Y_min', 'X_max', 'Y_max']
     for file_name in os.listdir(folder_path):
         if file_name.endswith('.xml'):
             annotation_path = os.path.join(folder_path, file_name)
             image_labels = parse_voc_file(annotation_path, voc_conf)
             image_data.extend(image_labels)
     frame = pd.DataFrame(image_data, columns=frame_columns)
+    if frame.empty:
+        raise ValueError(f'No labels were found in {os.path.abspath(folder_path)}')
     frame.to_csv(cache_path, index=False)
     return frame
 
 
 if __name__ == '__main__':
     t1 = perf_counter()
-    pd.set_option('display.max_columns', 500)
-    xx = parse_voc_folder('../../beverly_hills_gcp/lbl', 'Config/voc_conf.json')
-    print(xx)
-    print(f'{perf_counter() - t1} seconds')
+    fr = parse_voc_folder('../../../beverly_hills_gcp/lbl', '../Config/voc_conf.json')
+    print(fr)
+    print(f'Time: {perf_counter() - t1} seconds')
