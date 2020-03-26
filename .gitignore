@@ -1,0 +1,13 @@
+*.jpg
+*.jpeg
+*.png
+*.weights
+*.h5
+*.pyc
+*.xml
+*.mp4
+*.DS_Store
+*.bak
+*structure_requirements.txt
+*.swp
+*__pycache__
