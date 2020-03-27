@@ -11,6 +11,7 @@
 *structure_requirements.txt
 *.swp
 *__pycache__
-*.csv
+Caches
 *Train
 *Test
+*test.py

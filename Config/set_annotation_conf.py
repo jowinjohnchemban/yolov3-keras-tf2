@@ -57,4 +57,4 @@ if __name__ == '__main__':
     x_max_tag = 'xmax'
     y_max_tag = 'ymax'
     set_voc_tags(tree_tag, folder_tag, file_tag, path_tag, size_tag, width_tag, height_tag, depth_tag, object_tag,
-                object_name, box_tag, x_min_tag, y_min_tag, x_max_tag, y_max_tag)
+                 object_name, box_tag, x_min_tag, y_min_tag, x_max_tag, y_max_tag)
