@@ -3,6 +3,7 @@ from time import perf_counter
 import pandas as pd
 import json
 import os
+from visual_tools import visualization_wrapper
 
 
 def get_tree_item(parent, tag, file_path, find_all=False):
@@ -78,6 +79,7 @@ def adjust_frame(frame, cache_file):
     return frame
 
 
+@visualization_wrapper
 def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     """
     Parse a folder containing voc xml annotation files.
@@ -110,7 +112,6 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
 
 if __name__ == '__main__':
     t1 = perf_counter()
-    pd.set_option('display.max_columns', 500)
     fr = parse_voc_folder('../../../beverly_hills_gcp/lbl', '../Config/voc_conf.json')
     print(fr)
     print(f'Time: {perf_counter() - t1} seconds')
