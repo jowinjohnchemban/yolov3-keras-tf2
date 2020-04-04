@@ -4,6 +4,7 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras import Model
 import tensorflow as tf
 import numpy as np
+import os
 
 
 class V3Model:
@@ -20,6 +21,7 @@ class V3Model:
         self.layer_names = {func.__name__: f'layer_CURRENT_LAYER_{name}' for func, name in zip(
             self.funcs, self.func_names)}
         self.shortcuts = []
+        self.training_model = None
 
     def apply_func(self, func, x=None, *args, **kwargs):
         """
@@ -163,14 +165,42 @@ class V3Model:
         output_2 = self.apply_func(Lambda, detection_2, lambda item: tf.reshape(item, (
             -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
         if training:
-            return Model(input_initial, [output_0, output_1, output_2])
+            self.training_model = Model(input_initial, [output_0, output_1, output_2])
+            return self.training_model
+
+    def load_weights(self, weights_file):
+        with open(weights_file, 'rb') as weights_data:
+            print(f'Loading pre-trained weights ...')
+            major, minor, revision, seen, _ = np.fromfile(weights_data, dtype=np.int32, count=5)
+            for i, layer in enumerate(self.training_model.layers):
+                print(f'{(weights_data.tell() / os.fstat(weights_data.fileno()).st_size) * 100}', end='\r')
+                if 'conv2d' not in layer.name:
+                    continue
+                next_layer = self.training_model.layers[i + 1]
+                b_norm_layer = next_layer if 'batch_normalization' in next_layer.name else None
+                filters = layer.filters
+                kernel_size = layer.kernel_size[0]
+                input_dimension = layer.get_input_shape_at(-1)[-1]
+                convolution_bias = np.fromfile(
+                    weights_data, dtype=np.float32, count=filters) if b_norm_layer is None else None
+                bn_weights = np.fromfile(
+                    weights_data, dtype=np.float32, count=4 * filters).reshape((4, filters))[[1, 0, 2, 3]] if(
+                    b_norm_layer is not None) else None
+                convolution_shape = (filters, input_dimension, kernel_size, kernel_size)
+                convolution_weights = np.fromfile(
+                    weights_data, dtype=np.float32, count=np.product(convolution_shape)).reshape(
+                    convolution_shape).transpose([2, 3, 1, 0])
+                if b_norm_layer is None:
+                    layer.set_weights([convolution_weights, convolution_bias])
+                else:
+                    layer.set_weights([convolution_weights])
+                    b_norm_layer.set_weights(bn_weights)
 
 
 if __name__ == '__main__':
     anc = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                          (59, 119), (116, 90), (156, 198), (373, 326)], np.float32)
-    mod = V3Model((416, 416, 3), 80, anc).make(training=True)
-    mod.summary()
-
-
+    mod = V3Model((416, 416, 3), 80, anc)
+    tr_mod = mod.make(training=True)
+    mod.load_weights(weights_file='../../../yolov3.weights')
 
