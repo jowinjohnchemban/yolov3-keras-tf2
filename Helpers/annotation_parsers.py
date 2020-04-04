@@ -15,7 +15,7 @@ def get_tree_item(parent, tag, file_path, find_all=False):
         file_path: Current xml file being handled.
         find_all: If True, all elements found will be returned.
 
-    Return:
+    Returns:
         Tag item.
     """
     target = parent.find(tag)
@@ -33,7 +33,7 @@ def parse_voc_file(file_path, voc_conf):
         file_path: Path to xml file.
         voc_conf: voc configuration file.
 
-    Return:
+    Returns:
         A list of image annotations.
     """
     assert os.path.exists(file_path)
@@ -63,7 +63,7 @@ def adjust_frame(frame, cache_file):
         frame: pandas DataFrame containing annotation data.
         cache_file: cache_file: csv file name containing current session labels.
 
-    Return:
+    Returns:
         Frame with the new columns
     """
     object_id = 1
@@ -88,13 +88,15 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
         voc_conf: Path to voc json configuration file.
         cache_file: csv file name containing current session labels.
 
-    Return:
+    Returns:
         pandas DataFrame with the annotations.
     """
     assert os.path.exists(folder_path)
     cache_path = os.path.join('..', 'Caches', cache_file)
     if os.path.exists(cache_path):
-        return pd.read_csv(cache_path)
+        frame = pd.read_csv(cache_path)
+        print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+        return frame
     image_data = []
     frame_columns = [
         'Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min', 'Y_min', 'X_max', 'Y_max']

@@ -10,7 +10,7 @@ def iou(relative_sizes, centroids, k):
         centroids: 2D array of shape(k, 2)
         k: int, number of clusters.
 
-    Return:
+    Returns:
         IOU array.
     """
     n = relative_sizes.shape[0]
@@ -41,7 +41,7 @@ def k_means(relative_sizes, k, distance_func=np.median, frame=None):
         distance_func: function to calculate distance.
         frame: pandas DataFrame with the annotation data(for visualization purposes).
 
-    Return:
+    Returns:
         Optimal relative sizes.
     """
     box_number = relative_sizes.shape[0]
@@ -70,7 +70,7 @@ def generate_anchors(width, height, centroids):
         height: Height of image.
         centroids: Output of k-means.
 
-    Return:
+    Returns:
         2D array of resulting anchors.
     """
     return (centroids * np.array([width, height])).astype(int)

@@ -26,10 +26,10 @@ def set_voc_tags(tree, folder, filename, path, size, width, height, depth, obj, 
         indent: json output indent.
         sort_keys: Sort json output keys.
 
-    Return:
+    Returns:
         None.
     """
-    if conf_file in os.listdir():
+    if conf_file in os.listdir('.'):
         os.remove(os.path.join(os.getcwd(), conf_file))
     conf = {'Tree': {'Tree Tag': tree, 'Folder': folder, 'Filename': filename, 'Path': path},
             'Size': {'Size Tag': size, 'Width': width, 'Height': height, 'Depth': depth},

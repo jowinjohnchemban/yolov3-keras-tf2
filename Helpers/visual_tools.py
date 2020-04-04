@@ -3,6 +3,19 @@ import seaborn as sns
 import pandas as pd
 import imagesize
 import cv2
+import os
+
+
+def save_fig(title):
+    """
+    Save generated figures to Caches folder.
+    Args:
+        title: Figure title also the image to save file name.
+
+    Returns:
+        None
+    """
+    plt.savefig(os.path.join('..', 'Caches', f'{title}.png'))
 
 
 def visualize_box_relative_sizes(frame):
@@ -11,13 +24,14 @@ def visualize_box_relative_sizes(frame):
     Args:
         frame: pandas DataFrame with the annotation data.
 
-    Return:
+    Returns:
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
     sns.scatterplot(x=frame["Relative Width"], y=frame["Relative Height"], hue=frame["Object Name"],
                     palette='gist_rainbow')
     plt.title(title)
+    save_fig(title)
 
 
 def visualize_k_means_output(centroids, frame):
@@ -27,13 +41,15 @@ def visualize_k_means_output(centroids, frame):
         centroids: 2D array of shape(k, 2) output of k-means.
         frame: pandas DataFrame with the annotation data.
 
-    Return:
+    Returns:
         None
     """
+    title = f'{centroids.shape[0]} Centroids representing relative anchor sizes.'
     fig, ax = plt.subplots()
     visualize_box_relative_sizes(frame)
-    plt.title(f'{centroids.shape[0]} Centroids representing relative anchor sizes.')
+    plt.title(title)
     ax.scatter(centroids[:, 0], centroids[:, 1], marker='*', s=200, c='black')
+    save_fig(title)
 
 
 def visualize_boxes(relative_anchors, sample_image):
@@ -43,9 +59,10 @@ def visualize_boxes(relative_anchors, sample_image):
         relative_anchors: Output of k-means.
         sample_image: Path to image to display as background.
 
-    Return:
+    Returns:
         None
     """
+    title = 'Generated anchors relative to sample image size'
     img = cv2.imread(sample_image)
     width, height = imagesize.get(sample_image)
     center = int(width / 2), int(height / 2)
@@ -58,7 +75,9 @@ def visualize_boxes(relative_anchors, sample_image):
         y1 = int(y0 + box_height)
         cv2.rectangle(img, (x0, y0), (x1, y1), (255, 0, 0), 4)
     plt.imshow(img)
-    plt.title('Generated anchors relative to sample image size')
+    plt.grid()
+    plt.title(title)
+    save_fig(title)
 
 
 def visualization_wrapper(to_visualize):
@@ -67,7 +86,7 @@ def visualization_wrapper(to_visualize):
     Args:
         to_visualize: function to visualize.
 
-    Return:
+    Returns:
         to_visualize
     """
     def visualized(*args, **kwargs):
