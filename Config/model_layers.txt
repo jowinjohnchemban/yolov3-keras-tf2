@@ -1,0 +1,88 @@
+32, 3, 1, True
+64, 3, 2, True
+32, 1, 1, True, append
+64, 3, 1, True, add
+128, 3, 2, True
+64, 1, 1, True, append
+128, 3, 1, True, add
+64, 1, 1, True, append
+128, 3, 1, True, add
+256, 3, 2, True
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+128, 1, 1, True, append
+256, 3, 1, True, add
+skip_36 = x
+512, 3, 2, True
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+256, 1, 1, True, append
+512, 3, 1, True, add
+skip_61 = x
+1024, 3, 2, True
+512, 1, 1, True, append
+1024, 3, 1, True, add
+512, 1, 1, True, append
+1024, 3, 1, True, add
+512, 1, 1, True, append
+1024, 3, 1, True, add
+512, 1, 1, True, append
+1024, 3, 1, True, add
+512, 1, 1, True
+1024, 3, 1, True
+512, 1, 1, True
+1024, 3, 1, True
+512, 1, 1, True
+1024, 3, 1, True
+reshape
+detection_0 = x
+output_0 = None
+256, 1, 1, True
+upsample
+concat
+256, 1, 1, True
+512, 3, 1, True
+256, 1, 1, True
+512, 3, 1, True
+256, 1, 1, True
+512, 3, 1, True
+reshape
+detection_1 = x
+output_1 = None
+128, 1, 1, True
+Upsample
+concat
+128, 1, 1, True
+256, 3, 1, True
+128, 1, 1, True
+256, 3, 1, True
+128, 1, 1, True
+256, 3, 1, True
+reshape
+detection_2 = x
+output_2 = None
+training_model

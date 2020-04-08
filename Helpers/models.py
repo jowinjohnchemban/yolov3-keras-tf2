@@ -12,16 +12,17 @@ class V3Model:
         self.current_layer = 1
         self.input_shape = input_shape
         self.classes = classes
-        self.anchors = anchors 
+        self.anchors = anchors
         self.funcs = (ZeroPadding2D, BatchNormalization, LeakyReLU, Conv2D,
-                      Add, Input, UpSampling2D, Concatenate, Lambda)
+                      Add, Input, UpSampling2D, Concatenate, Lambda, Model)
         self.func_names = [
             'zero_padding', 'batch_normalization', 'leaky_relu', 'conv2d',
-            'add', 'input', 'up_sample', 'concat', 'lambda']
+            'add', 'input', 'up_sample', 'concat', 'lambda', 'model']
         self.layer_names = {func.__name__: f'layer_CURRENT_LAYER_{name}' for func, name in zip(
             self.funcs, self.func_names)}
         self.shortcuts = []
         self.training_model = None
+        self.output_layers = ['output_2', 'output_1', 'output_0']
 
     def apply_func(self, func, x=None, *args, **kwargs):
         """
@@ -36,6 +37,8 @@ class V3Model:
             result of func
         """
         name = self.layer_names[func.__name__].replace('CURRENT_LAYER', f'{self.current_layer}')
+        if func.__name__ == 'Model':
+            name = f'layer_{self.current_layer}_{self.output_layers.pop()}'
         result = func(name=name, *args, **kwargs)
         self.current_layer += 1
         if x is not None:
@@ -71,6 +74,14 @@ class V3Model:
         if action == 'add':
             return self.apply_func(Add, [self.shortcuts.pop(), x])
         return x
+
+    def output(self, x_input, filters):
+        x = inputs = self.apply_func(Input, shape=x_input.shape[1:])
+        x = self.convolution_block(x, 2 * filters, 3, 1, True)
+        x = self.convolution_block(x, 3 * (5 + self.classes), 1, 1, False)
+        x = self.apply_func(Lambda, x, lambda item: tf.reshape(item, (
+            -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
+        return self.apply_func(Model, x_input, inputs, x)
 
     def make(self, training):
         input_initial = self.apply_func(Input, shape=self.input_shape)
@@ -133,11 +144,8 @@ class V3Model:
         x = self.convolution_block(x, 512, 1, 1, True)
         x = self.convolution_block(x, 1024, 3, 1, True)
         x = self.convolution_block(x, 512, 1, 1, True)  #
-        x = self.convolution_block(x, 1024, 3, 1, True)
-        x = self.convolution_block(x, 3 * (5 + self.classes), 1, 1, False)  #
         detection_0 = x
-        output_0 = self.apply_func(Lambda, detection_0, lambda item: tf.reshape(item, (
-            -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
+        output_0 = self.output(detection_0, 512)
         x = self.convolution_block(x, 256, 1, 1, True)  #
         x = self.apply_func(UpSampling2D, x, size=2)
         x = self.apply_func(Concatenate, [x, skip_61])
@@ -146,11 +154,8 @@ class V3Model:
         x = self.convolution_block(x, 256, 1, 1, True)
         x = self.convolution_block(x, 512, 3, 1, True)
         x = self.convolution_block(x, 256, 1, 1, True)  #
-        x = self.convolution_block(x, 512, 3, 1, True)
-        x = self.convolution_block(x, 3 * (5 + self.classes), 1, 1, False)  #
         detection_1 = x
-        output_1 = self.apply_func(Lambda, detection_1, lambda item: tf.reshape(item, (
-            -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
+        output_1 = self.output(detection_1, 256)
         x = self.convolution_block(x, 128, 1, 1, True)  #
         x = self.apply_func(UpSampling2D, x, size=2)
         x = self.apply_func(Concatenate, [x, skip_36])
@@ -159,24 +164,32 @@ class V3Model:
         x = self.convolution_block(x, 128, 1, 1, True)
         x = self.convolution_block(x, 256, 3, 1, True)
         x = self.convolution_block(x, 128, 1, 1, True)
-        x = self.convolution_block(x, 256, 3, 1, True)
-        x = self.convolution_block(x, 3 * (5 + self.classes), 1, 1, True)  #
         detection_2 = x
-        output_2 = self.apply_func(Lambda, detection_2, lambda item: tf.reshape(item, (
-            -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
+        output_2 = self.output(detection_2, 128)
         if training:
             self.training_model = Model(input_initial, [output_0, output_1, output_2])
             return self.training_model
 
     def load_weights(self, weights_file):
+        if weights_file.endswith('.tf'):
+            self.training_model.load_weights(weights_file)
+            return
         with open(weights_file, 'rb') as weights_data:
             print(f'Loading pre-trained weights ...')
             major, minor, revision, seen, _ = np.fromfile(weights_data, dtype=np.int32, count=5)
-            for i, layer in enumerate(self.training_model.layers):
-                print(f'{(weights_data.tell() / os.fstat(weights_data.fileno()).st_size) * 100}', end='\r')
+            all_layers = [layer for layer in self.training_model.layers if 'output' not in layer.name]
+            output_models = [layer for layer in self.training_model.layers if 'output' in layer.name]
+            output_layers = [item.layers for item in output_models]
+            for output_item in output_layers:
+                all_layers.extend(output_item)
+            all_layers.sort(key=lambda layer: int(layer.name.split('_')[1]))
+            for i, layer in enumerate(all_layers):
+                current_read = weights_data.tell()
+                total_size = os.fstat(weights_data.fileno()).st_size
+                print(f'\r{round(100 * (current_read / total_size))}%\t{current_read}/{total_size}', end='')
                 if 'conv2d' not in layer.name:
                     continue
-                next_layer = self.training_model.layers[i + 1]
+                next_layer = all_layers[i + 1]
                 b_norm_layer = next_layer if 'batch_normalization' in next_layer.name else None
                 filters = layer.filters
                 kernel_size = layer.kernel_size[0]
@@ -192,9 +205,12 @@ class V3Model:
                     convolution_shape).transpose([2, 3, 1, 0])
                 if b_norm_layer is None:
                     layer.set_weights([convolution_weights, convolution_bias])
-                else:
+                if b_norm_layer is not None:
                     layer.set_weights([convolution_weights])
                     b_norm_layer.set_weights(bn_weights)
+            assert len(weights_data.read()) == 0, 'failed to read all data'
+        print()
+        print(f'Loading pre-trained weights ... done')
 
 
 if __name__ == '__main__':
@@ -202,5 +218,7 @@ if __name__ == '__main__':
                          (59, 119), (116, 90), (156, 198), (373, 326)], np.float32)
     mod = V3Model((416, 416, 3), 80, anc)
     tr_mod = mod.make(training=True)
-    mod.load_weights(weights_file='../../../yolov3.weights')
+    # tr_mod.summary()
+    mod.load_weights('../../../yolov3.weights')
+    tr_mod.summary()
 
