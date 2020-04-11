@@ -219,6 +219,6 @@ if __name__ == '__main__':
     mod = V3Model((416, 416, 3), 80, anc)
     tr_mod = mod.make(training=True)
     # tr_mod.summary()
-    mod.load_weights('../../../yolov3.weights')
+    mod.load_weights('../../yolov3.weights')
     tr_mod.summary()
 

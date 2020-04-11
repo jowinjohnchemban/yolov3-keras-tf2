@@ -114,6 +114,6 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
 
 if __name__ == '__main__':
     t1 = perf_counter()
-    fr = parse_voc_folder('../../../beverly_hills_gcp/lbl', '../Config/voc_conf.json')
+    fr = parse_voc_folder('../../../beverly_hills/labels', '../Config/voc_conf.json')
     print(fr)
     print(f'Time: {perf_counter() - t1} seconds')
