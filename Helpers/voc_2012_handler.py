@@ -4,6 +4,10 @@ import pandas as pd
 import json
 import os
 from visual_tools import visualization_wrapper
+from xml.etree.ElementTree import Element, SubElement
+from xml.etree import ElementTree
+from lxml import etree
+
 
 
 def get_tree_item(parent, tag, file_path, find_all=False):
@@ -92,11 +96,11 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
         pandas DataFrame with the annotations.
     """
     assert os.path.exists(folder_path)
-    # cache_path = os.path.join('..', 'Caches', cache_file)
-    # if os.path.exists(cache_path):
-    #     frame = pd.read_csv(cache_path)
-    #     print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
-    #     return frame
+    cache_path = os.path.join('..', 'Caches', cache_file)
+    if os.path.exists(cache_path):
+        frame = pd.read_csv(cache_path)
+        print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+        return frame
     image_data = []
     frame_columns = [
         'Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min', 'Y_min', 'X_max', 'Y_max']
@@ -112,8 +116,34 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     return frame
 
 
+def add_xml_path(xml_file, path):
+    print(f'Current file: {xml_file}')
+    tree = ElementTree.parse(xml_file)
+    top = tree.getroot()
+    # if tree.find('path'):
+    #     print('Status: ok')
+    #     return
+    # print('Modifying ...')
+    folder_tag = tree.find('folder')
+    folder_tag.text = path
+    file_name_tag = tree.find('filename')
+    path_tag = SubElement(top, 'path')
+    path_tag.text = os.path.join(folder_tag.text, file_name_tag.text)
+    rough_string = ElementTree.tostring(top, 'utf8')
+    root = etree.fromstring(rough_string)
+    pretty = etree.tostring(
+        root, pretty_print=True, encoding='utf-8').replace("  ".encode(), "\t".encode())
+    os.remove(xml_file)
+    with open(xml_file, 'wb') as output:
+        output.write(pretty)
+
+
 if __name__ == '__main__':
-    t1 = perf_counter()
-    fr = parse_voc_folder('../../../Annotations', '../Config/voc_conf.json')
-    print(fr)
-    print(f'Time: {perf_counter() - t1} seconds')
+    new_p = '/content/drive/My Drive/voc2012_raw/VOCdevkit/VOC2012/JPEGImages/'
+    for file_name in os.listdir(
+            '/content/drive/My Drive/voc2012_raw/VOCdevkit/VOC2012/Annotations/'):
+        if file_name.endswith('.xml'):
+            add_xml_path(f'/content/drive/My Drive/voc2012_raw/'
+                         f'VOCdevkit/VOC2012/Annotations/{file_name}', new_p)
+
+

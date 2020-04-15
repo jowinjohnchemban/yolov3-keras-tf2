@@ -3,11 +3,31 @@ import pandas as pd
 import numpy as np
 import hashlib
 import os
+# from Config.feature_map import get_feature_map
+
+
+def get_feature_map():
+    features = {
+        'image_width': tf.io.FixedLenFeature([], tf.int64),
+        'image_height': tf.io.FixedLenFeature([], tf.int64),
+        'image_path': tf.io.FixedLenFeature([], tf.string),
+        'image_file': tf.io.FixedLenFeature([], tf.string),
+        'image_key': tf.io.FixedLenFeature([], tf.string),
+        'image_data': tf.io.FixedLenFeature([], tf.string),
+        'image_format': tf.io.FixedLenFeature([], tf.string),
+        'x_min': tf.io.VarLenFeature(tf.float32),
+        'y_min': tf.io.VarLenFeature(tf.float32),
+        'x_max': tf.io.VarLenFeature(tf.float32),
+        'y_max': tf.io.VarLenFeature(tf.float32),
+        'object_name': tf.io.VarLenFeature(tf.string),
+        'object_id': tf.io.VarLenFeature(tf.int64)
+    }
+    return features
 
 
 def create_example(separate_data, key, image_data):
     """
-    Create tf.train.Example objects
+    Create tf.train.Example object.
     Args:
         separate_data: numpy tensor of 1 image data.
         key: output of hashlib.sha256()
@@ -16,35 +36,92 @@ def create_example(separate_data, key, image_data):
     Returns:
         tf.train.Example object.
     """
-    [image, object_names, image_widths, image_heights, x_mins, y_mins, x_maxs,
-     y_maxs, bw, bh, object_ids] = separate_data
+    [image, object_name, image_width, image_height, x_min, y_min, x_max,
+     y_max, _, _, object_id] = separate_data
     image_file_name = os.path.split(image[0])[-1]
     image_format = image_file_name.split('.')[-1]
     features = {
-        'image_heights': tf.train.Feature(int64_list=tf.train.Int64List(value=[image_heights[0]])),
-        'image_widths': tf.train.Feature(int64_list=tf.train.Int64List(value=[image_widths[0]])),
+        'image_height': tf.train.Feature(int64_list=tf.train.Int64List(value=[image_height[0]])),
+        'image_width': tf.train.Feature(int64_list=tf.train.Int64List(value=[image_width[0]])),
         'image_path': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image[0].encode('utf-8')])),
         'image_file': tf.train.Feature(bytes_list=tf.train.BytesList(value=[
             image_file_name.encode('utf8')])),
         'image_key': tf.train.Feature(bytes_list=tf.train.BytesList(value=[key.encode('utf8')])),
         'image_data': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_data])),
         'image_format': tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_format.encode('utf8')])),
-        'x_mins': tf.train.Feature(float_list=tf.train.FloatList(value=x_mins)),
-        'y_mins': tf.train.Feature(float_list=tf.train.FloatList(value=y_mins)),
-        'x_maxs': tf.train.Feature(float_list=tf.train.FloatList(value=x_maxs)),
-        'y_maxs': tf.train.Feature(float_list=tf.train.FloatList(value=y_maxs)),
-        'object_names': tf.train.Feature(bytes_list=tf.train.BytesList(value=object_names)),
-        'object_ids': tf.train.Feature(int64_list=tf.train.Int64List(value=object_ids)),
+        'x_min': tf.train.Feature(float_list=tf.train.FloatList(value=x_min)),
+        'y_min': tf.train.Feature(float_list=tf.train.FloatList(value=y_min)),
+        'x_max': tf.train.Feature(float_list=tf.train.FloatList(value=x_max)),
+        'y_max': tf.train.Feature(float_list=tf.train.FloatList(value=y_max)),
+        'object_name': tf.train.Feature(bytes_list=tf.train.BytesList(value=object_name)),
+        'object_id': tf.train.Feature(int64_list=tf.train.Int64List(value=object_id)),
     }
     return tf.train.Example(features=tf.train.Features(feature=features))
 
 
-def save_tfr(data, output_path):
+def read_example(example, feature_map, new_size, class_table, max_boxes):
     """
-    Transform, split and save dataset into TFRecord format.
+    Read single a single example from a TFRecord file.
+    Args:
+        example: nd tensor.
+        feature_map: A dictionary of feature names mapped to tf.io objects.
+        new_size: w, h new image size
+        class_table: StaticHashTable object.
+        max_boxes: Maximum number of boxes per image
+
+    Returns:
+        x_train, y_train
+    """
+    features = tf.io.parse_single_example(example, feature_map)
+    image = tf.image.decode_jpeg(features['image_data'], channels=3)
+    x_train = tf.image.resize(image, new_size)
+    object_name = tf.sparse.to_dense(features['object_name'])
+    label = tf.cast(class_table.lookup(object_name), tf.float32)
+    y_train = tf.stack([tf.sparse.to_dense(features[feature])
+                        for feature in ['x_min', 'y_min', 'x_max', 'y_max']] + [label], 1)
+    padding = [[0, max_boxes - tf.shape(y_train)[0]], [0, 0]]
+    y_train = tf.pad(y_train, padding)
+    return x_train, y_train
+
+
+def write_tf_record(output_path, groups, data):
+    """
+    Write data to TFRecord.
+    Args:
+        output_path: Full path to save.
+        groups: pandas GroupBy object.
+        data: pandas DataFrame
+
+    Returns:
+        None
+    """
+    print(f'Processing {os.path.split(output_path)[-1]}')
+    with tf.io.TFRecordWriter(output_path) as r_writer:
+        for current_image, (image_path, objects) in enumerate(groups.iteritems(), 1):
+            print(f'\rBuilding example: {current_image}/{len(groups)} ... '
+                  f'{os.path.split(image_path)[-1]} '
+                  f'{round(100 * (current_image / len(groups)))}% completed', end='')
+            separate_data = pd.DataFrame(objects, columns=data.columns).T.to_numpy()
+            image_width, image_height, x_min, y_min, x_max, y_max = separate_data[2:8]
+            x_min /= image_width
+            x_max /= image_width
+            y_min /= image_height
+            y_max /= image_height
+            image_data = open(image_path, 'rb').read()
+            key = hashlib.sha256(image_data).hexdigest()
+            training_example = create_example(separate_data, key, image_data)
+            r_writer.write(training_example.SerializeToString())
+    print()
+
+
+def save_tfr(data, output_folder, dataset_name, test_size=None):
+    """
+    Transform and save dataset into TFRecord format.
     Args:
         data: pandas DataFrame with the dataset contents.
-        output_path: Full path/name to save train/validation TFRecords.
+        output_folder: Path to folder where TFRecord(s) will be saved.
+        dataset_name: str name of the dataset.
+        test_size: relative test subset size.
 
     Returns:
         None
@@ -52,21 +129,45 @@ def save_tfr(data, output_path):
     data['Object Name'] = data['Object Name'].apply(lambda x: x.encode('utf-8'))
     data['Object ID'] = data['Object ID'].astype(int)
     groups = data.groupby('Image Path').apply(np.array)
-    with tf.io.TFRecordWriter(output_path) as r_writer:
-        for image_path, objects in groups.iteritems():
-            separate_data = pd.DataFrame(objects, columns=data.columns).T.to_numpy()
-            image_widths, image_heights, x_mins, y_mins, x_maxs, y_maxs = separate_data[2:8]
-            x_mins /= image_widths
-            x_maxs /= image_widths
-            y_mins /= image_heights
-            y_maxs /= image_heights
-            image_data = open(image_path, 'rb').read()
-            key = hashlib.sha256(image_data).hexdigest()
-            training_example = create_example(separate_data, key, image_data)
-            r_writer.write(training_example.SerializeToString())
+    if test_size:
+        assert 0 < test_size < 1, f'test_size must be 0 < test_size < 1 and {test_size} is given'
+        separation_index = int((1 - test_size) * len(groups))
+        training_set = groups[:separation_index]
+        test_set = groups[separation_index:]
+        training_path = os.path.join(output_folder, f'{dataset_name}_train.tfrecord')
+        test_path = os.path.join(output_folder, f'{dataset_name}_test.tfrecord')
+        write_tf_record(training_path, training_set, data)
+        write_tf_record(test_path, test_set, data)
+        return
+    write_tf_record(os.path.join(output_folder, f'{dataset_name}.tfrecord'), groups, data)
+
+
+def read_tfr(tf_record_file, classes_file, new_size, feature_map, max_boxes,
+             classes_delimiter='\n'):
+    """
+    Read and load dataset from TFRecord file.
+    Args:
+        tf_record_file: Path to TFRecord file.
+        classes_file: file containing classes.
+        new_size: w, h new image size
+        feature_map: A dictionary of feature names mapped to tf.io objects.
+        max_boxes: Maximum number of boxes per image.
+        classes_delimiter: delimiter in classes_file.
+
+    Returns:
+        MapDataset object.
+    """
+    text_init = tf.lookup.TextFileInitializer(
+        classes_file, tf.string, 0, tf.int64, -1, delimiter=classes_delimiter)
+    class_table = tf.lookup.StaticHashTable(text_init, -1)
+    files = tf.data.Dataset.list_files(tf_record_file)
+    dataset = files.flat_map(tf.data.TFRecordDataset)
+    return dataset.map(
+        lambda x: read_example(x, feature_map, new_size, class_table, max_boxes))
 
 
 if __name__ == '__main__':
     from annotation_parsers import parse_voc_folder
-    fr = pd.read_csv('../Caches/data_set_labels.csv')
-    save_tfr(fr, 'beverly_hills.tfrecord')
+    fr = parse_voc_folder('/content/drive/My Drive/beverly_hills/labels_g_drive/',
+                          '../Config/voc_conf.json')
+    save_tfr(fr, '../../', 'beverly_hills', 0.2)
