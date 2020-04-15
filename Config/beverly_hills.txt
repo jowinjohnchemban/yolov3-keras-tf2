@@ -1,0 +1,16 @@
+Car
+Street Sign
+Palm Tree
+Street Lamp
+Minivan
+Traffic Lights
+Pedestrian
+Fire Hydrant
+Flag
+Trash Can
+Bicycle
+Bus
+Pickup Truck
+Road Block
+Delivery Truck
+Motorcycle
