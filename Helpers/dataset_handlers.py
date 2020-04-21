@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import hashlib
 import os
-# from Config.feature_map import get_feature_map
 
 
 def get_feature_map():
@@ -59,22 +58,23 @@ def create_example(separate_data, key, image_data):
     return tf.train.Example(features=tf.train.Features(feature=features))
 
 
-def read_example(example, feature_map, new_size, class_table, max_boxes):
+def read_example(example, feature_map, class_table, max_boxes, new_size=None):
     """
     Read single a single example from a TFRecord file.
     Args:
         example: nd tensor.
         feature_map: A dictionary of feature names mapped to tf.io objects.
-        new_size: w, h new image size
         class_table: StaticHashTable object.
         max_boxes: Maximum number of boxes per image
+        new_size: w, h new image size
 
     Returns:
         x_train, y_train
     """
     features = tf.io.parse_single_example(example, feature_map)
-    image = tf.image.decode_jpeg(features['image_data'], channels=3)
-    x_train = tf.image.resize(image, new_size)
+    x_train = tf.image.decode_png(features['image_data'], channels=3)
+    if new_size:
+        x_train = tf.image.resize(x_train, new_size)
     object_name = tf.sparse.to_dense(features['object_name'])
     label = tf.cast(class_table.lookup(object_name), tf.float32)
     y_train = tf.stack([tf.sparse.to_dense(features[feature])
@@ -142,17 +142,17 @@ def save_tfr(data, output_folder, dataset_name, test_size=None):
     write_tf_record(os.path.join(output_folder, f'{dataset_name}.tfrecord'), groups, data)
 
 
-def read_tfr(tf_record_file, classes_file, new_size, feature_map, max_boxes,
-             classes_delimiter='\n'):
+def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
+             classes_delimiter='\n', new_size=None):
     """
     Read and load dataset from TFRecord file.
     Args:
         tf_record_file: Path to TFRecord file.
         classes_file: file containing classes.
-        new_size: w, h new image size
         feature_map: A dictionary of feature names mapped to tf.io objects.
         max_boxes: Maximum number of boxes per image.
         classes_delimiter: delimiter in classes_file.
+        new_size: w, h new image size
 
     Returns:
         MapDataset object.
@@ -163,11 +163,13 @@ def read_tfr(tf_record_file, classes_file, new_size, feature_map, max_boxes,
     files = tf.data.Dataset.list_files(tf_record_file)
     dataset = files.flat_map(tf.data.TFRecordDataset)
     return dataset.map(
-        lambda x: read_example(x, feature_map, new_size, class_table, max_boxes))
+        lambda x: read_example(x, feature_map, class_table, max_boxes, new_size))
 
 
 if __name__ == '__main__':
-    from annotation_parsers import parse_voc_folder
-    fr = parse_voc_folder('/content/drive/My Drive/beverly_hills/labels_g_drive/',
-                          '../Config/voc_conf.json')
-    save_tfr(fr, '../../', 'beverly_hills', 0.2)
+    # from annotation_parsers import parse_voc_folder
+    # fr = parse_voc_folder(folder_path='../../../beverly_hills/labels',
+    #                       voc_conf='../Config/voc_conf.json')
+    # save_tfr(fr, '../../', 'beverly_hills', 0.2)
+    read_tfr('../../beverly_hills_train.tfrecord', '../Config/beverly_hills.txt', get_feature_map(),
+             100)

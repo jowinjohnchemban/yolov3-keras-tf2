@@ -78,8 +78,8 @@ def generate_anchors(width, height, centroids):
 
 if __name__ == '__main__':
     from annotation_parsers import parse_voc_folder
-    fr = parse_voc_folder('../../../beverly_hills/labels', '../Config/voc_conf.json')
+    fr = parse_voc_folder('../../../beverly_hills/labels/', '../Config/voc_conf.json')
     relative_dims = np.array(list(zip(fr['Relative Width'], fr['Relative Height'])))
     kk = 9
     c, f = k_means(relative_dims, kk, frame=fr)
-    print(generate_anchors(1344, 756, c))
+    print([list(item) for item in generate_anchors(1344, 756, c)])
