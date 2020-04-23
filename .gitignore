@@ -14,3 +14,9 @@
 *Train
 *Test
 *test.py
+*.tf
+*.tfrecord
+!Data
+!Data/Photos
+!Data/TFRecords
+!Data/XML Labels

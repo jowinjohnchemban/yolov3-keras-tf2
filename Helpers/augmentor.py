@@ -1,38 +1,35 @@
 import os
-from pathlib import Path
 import cv2
 import imagesize
 import numpy as np
 import pandas as pd
 from imgaug import augmenters as iaa
+from pathlib import Path
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
-from Config.augmentation_options import augmentations
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from Config.augmentation_options import augmentations
 
 
 class DataAugment:
     """
     A tool for augmenting image data sets with bounding box support.
     """
-    def __init__(self, image_folder, labels_file, augmentation_map, augment_destination,
-                 workers=32, converted_coordinates_file=None):
+    def __init__(self, labels_file, augmentation_map, workers=32,
+                 converted_coordinates_file=None):
         """
         Initialize augmentation session.
         Args:
-            image_folder: Folder path containing images that will be augmented.
             labels_file: cvv file containing relative image labels
             augmentation_map: A structured dictionary containing categorized augmentation
             sequences.
-            augment_destination: Folder path to which new images will be saved.
             workers: Parallel threads.
             converted_coordinates_file: csv file containing converted from relative
             to coordinates.
         """
-        self.image_folder = image_folder
-        self.augment_destination = augment_destination
-        self.labels_file = labels_file
-        self.image_paths = [Path(os.path.join(image_folder, image)).absolute().resolve()
-                            for image in os.listdir(image_folder)
+        self.mapping = pd.read_csv(labels_file)
+        self.image_folder = Path('../Data/Photos').absolute().resolve()
+        self.image_paths = [Path(os.path.join(self.image_folder, image)).absolute().resolve()
+                            for image in os.listdir(self.image_folder)
                             if not image.startswith('.')]
         self.image_width, self.image_height = imagesize.get(self.image_paths[0])
         self.converted_coordinates = pd.read_csv(converted_coordinates_file) if (
@@ -43,6 +40,8 @@ class DataAugment:
         self.augmentation_map = augmentation_map
         self.workers = workers
         self.augmented_images = 0
+        self.total_images = len(self.image_paths)
+        self.session_id = np.random.randint(10 ** 6, (10 ** 7))
 
     def create_sequences(self, sequences):
         """
@@ -85,14 +84,13 @@ class DataAugment:
             new_size: new image dimensions(tuple).
 
         Returns:
-            numpy array(image)
+            numpy array(image), image_path
         """
         assert os.path.exists(image_path), f'{image_path} does not exist'
-        print(f'Loading {image_path}')
         image = cv2.imread(image_path)
         if new_size:
             return cv2.resize(image, new_size)
-        return image
+        return image, image_path
 
     @staticmethod
     def ratios_to_coordinates(bx, by, bw, bh, width, height):
@@ -141,7 +139,7 @@ class DataAugment:
 
     def relative_to_coordinates(self, out_file=None):
         """
-        Convert relative coordinates in self.labels_file
+        Convert relative coordinates in self.mapping
         to coordinates.
         Args:
             out_file: path to new converted csv.
@@ -149,9 +147,8 @@ class DataAugment:
         Returns:
             pandas DataFrame with the new coordinates.
         """
-        mapping = pd.read_csv(self.labels_file)
         items_to_save = []
-        for index, data in mapping.iterrows():
+        for index, data in self.mapping.iterrows():
             image_name, object_name, object_index, bx, by, bw, bh = data
             x1, y1, x2, y2 = self.ratios_to_coordinates(
                 bx, by, bw, bh, self.image_width, self.image_height)
@@ -195,7 +192,7 @@ class DataAugment:
         return BoundingBoxesOnImage(
             boxes, shape=(self.image_height, self.image_width)), frame_before
 
-    def load_batch(self, new_size=None, batch_size=64):
+    def load_batch(self, new_size, batch_size):
         """
         Load a batch of images in memory for augmentation.
         Args:
@@ -209,13 +206,15 @@ class DataAugment:
                  for _ in range(batch_size)
                  if self.image_paths]
         loaded = []
+        paths = []
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
             future_images = {executor.submit(self.load_image, image_path, new_size):
                              image_path for image_path in batch}
             for future_image in as_completed(future_images):
-                image = future_image.result()
+                image, image_path = future_image.result()
                 loaded.append(image)
-        return np.array(loaded)
+                paths.append(image_path)
+        return np.array(loaded), paths
 
     def update_data(self, bbs_aug, frame_before, image_aug, new_name, new_path):
         """
@@ -251,30 +250,58 @@ class DataAugment:
             image_path: Path to image.
 
         Returns:
-
+            None
         """
+        current_sequence = 1
         for augmentation_sequence in self.augmentation_sequences:
-            new_image_name = (f'aug-{np.random.randint(10 ** 6, (10 ** 7))}-'
+            new_image_name = (f'aug-{self.session_id}-sequence-{current_sequence}'
                               f'{os.path.basename(image_path)}')
-            new_image_path = os.path.join(self.augment_destination, new_image_name)
+            new_image_path = os.path.join(self.image_folder, new_image_name)
             bbs, frame_before = self.get_bounding_boxes_over_image(image_path)
             augmented_image, augmented_boxes = augmentation_sequence(
                 image=image, bounding_boxes=bbs)
             self.update_data(augmented_boxes, frame_before, augmented_image,
                              new_image_name, new_image_path)
+            current_sequence += 1
+        self.augmented_images += 1
+        current = os.path.basename(image_path)
+        completed = f'{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}'
+        percent = (self.augmented_images / (self.total_images * len(self.augmentation_sequences)) * 100)
+        print(f'\raugmenting {current}\t{completed}\t{percent}% completed', end='')
 
-    def augment_batch(self, batch_tensor, batch_paths):
-        pass
+    def augment_folder(self, batch_size=64, new_size=None):
+        """
+        Augment a batch of images
+        Args:
+            batch_size: Size of each augmentation batch.
+            new_size: tuple, new image size.
+
+        Returns:
+            None
+        """
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            while self.image_paths:
+                current_batch, current_paths = self.load_batch(new_size, batch_size)
+                future_augmentations = {executor.submit(self.augment_image, image, path): path
+                                        for image, path in zip(current_batch, current_paths)}
+                for future_augmented in as_completed(future_augmentations):
+                    future_augmented.result()
+        augmentation_frame = pd.DataFrame(self.augmentation_data,
+                                          columns=self.mapping.columns)
+        full_frame = pd.concat([self.mapping, augmentation_frame],
+                               ignore_index=True,
+                               axis=1)
+        full_frame.to_csv(os.path.join(
+            self.image_folder, f'augmented_data.csv'), index=False)
 
 
 if __name__ == '__main__':
-    aug = DataAugment('../../../beverly_hills/photos',
-                      '../../../beverly_hills/bh_labels.csv',
-                      augmentations,
-                      '../../../beverly_hills/test_aug/',
-                      converted_coordinates_file='scratch/label_coordinates.csv')
-    # print(aug.load_batch())
+    aug = DataAugment(
+        '../../../beverly_hills/bh_labels.csv',
+        augmentations,
+        converted_coordinates_file='scratch/label_coordinates.csv')
     aug.create_sequences([[{'sequence_group': 'meta', 'no': 5},
                            {'sequence_group': 'arithmetic', 'no': 3}],
                           [{'sequence_group': 'arithmetic', 'no': 2}]])
+    aug.augment_folder()
 

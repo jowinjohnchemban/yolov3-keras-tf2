@@ -1,9 +1,10 @@
-with open('../../mod_layers.txt') as not_mine:
-    with open('../../mod_layers_me.txt') as mine:
-        nm = [item.strip() for item in not_mine.readlines()]
-        m = [item.strip() for item in mine.readlines()]
-        for i in range(len(nm)):
-            try:
-                print(f'{i}- {nm[i]}   {m[i]}')
-            except IndexError:
-                print(f'{i}- {nm[i]}   None')
+import re
+
+with open('something.txt') as some:
+    with open('out.txt', 'a') as new:
+        for line in some.readlines():
+            print(line)
+            values = re.findall('[0.-9]+', line)
+            minimum = float(values[8])
+            maximum = float(values[10])
+            new.write(f'{line.strip()}{minimum + maximum}\n')

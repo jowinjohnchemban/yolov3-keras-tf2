@@ -1,5 +1,5 @@
 import numpy as np
-from visual_tools import visualization_wrapper
+from Helpers.visual_tools import visualization_wrapper
 
 
 def iou(relative_sizes, centroids, k):
@@ -77,7 +77,7 @@ def generate_anchors(width, height, centroids):
 
 
 if __name__ == '__main__':
-    from annotation_parsers import parse_voc_folder
+    from Helpers.annotation_parsers import parse_voc_folder
     fr = parse_voc_folder('../../../beverly_hills/labels/', '../Config/voc_conf.json')
     relative_dims = np.array(list(zip(fr['Relative Width'], fr['Relative Height'])))
     kk = 9

@@ -3,7 +3,7 @@ from time import perf_counter
 import pandas as pd
 import json
 import os
-from visual_tools import visualization_wrapper
+from Helpers.visual_tools import visualization_wrapper
 
 
 def get_tree_item(parent, tag, file_path, find_all=False):
@@ -95,7 +95,7 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     # cache_path = os.path.join('..', 'Caches', cache_file)
     # if os.path.exists(cache_path):
     #     frame = pd.read_csv(cache_path)
-    #     print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+    #     print(f'XML Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
     #     return frame
     image_data = []
     frame_columns = [
@@ -108,8 +108,7 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     frame = pd.DataFrame(image_data, columns=frame_columns)
     if frame.empty:
         raise ValueError(f'No labels were found in {os.path.abspath(folder_path)}')
-    frame = adjust_frame(frame, cache_file)
-    return frame
+    return adjust_frame(frame, cache_file)
 
 
 if __name__ == '__main__':

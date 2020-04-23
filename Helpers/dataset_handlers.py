@@ -167,9 +167,9 @@ def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
 
 
 if __name__ == '__main__':
-    # from annotation_parsers import parse_voc_folder
-    # fr = parse_voc_folder(folder_path='../../../beverly_hills/labels',
-    #                       voc_conf='../Config/voc_conf.json')
-    # save_tfr(fr, '../../', 'beverly_hills', 0.2)
-    read_tfr('../../beverly_hills_train.tfrecord', '../Config/beverly_hills.txt', get_feature_map(),
-             100)
+    from Helpers.annotation_parsers import parse_voc_folder
+    fr = parse_voc_folder(folder_path='../../../beverly_hills/labels',
+                          voc_conf='../Config/voc_conf.json')
+    save_tfr(fr, '../../', 'beverly_hills', 0.2)
+    # read_tfr('../../beverly_hills_train.tfrecord', '../Config/beverly_hills.txt', get_feature_map(),
+    #          100)
