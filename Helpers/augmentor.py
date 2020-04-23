@@ -8,6 +8,8 @@ from pathlib import Path
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Config.augmentation_options import augmentations
+from Helpers.utils import ratios_to_coordinates
+from Helpers.annotation_parsers import adjust_non_voc_csv
 
 
 class DataAugment:
@@ -26,8 +28,9 @@ class DataAugment:
             converted_coordinates_file: csv file containing converted from relative
             to coordinates.
         """
+        self.labels_file = labels_file
         self.mapping = pd.read_csv(labels_file)
-        self.image_folder = Path('../Data/Photos').absolute().resolve()
+        self.image_folder = Path(os.path.join('..', 'Data', 'Photos')).absolute().resolve()
         self.image_paths = [Path(os.path.join(self.image_folder, image)).absolute().resolve()
                             for image in os.listdir(self.image_folder)
                             if not image.startswith('.')]
@@ -92,28 +95,6 @@ class DataAugment:
             return cv2.resize(image, new_size)
         return image, image_path
 
-    @staticmethod
-    def ratios_to_coordinates(bx, by, bw, bh, width, height):
-        """
-        Convert relative coordinates to actual coordinates.
-        Args:
-            bx: Relative center x coordinate.
-            by: Relative center y coordinate.
-            bw: Relative box width.
-            bh: Relative box height.
-            width: Image batch width.
-            height: Image batch height.
-
-        Return:
-            x1: x coordinate.
-            y1: y coordinate.
-            x2: x1 + Bounding box width.
-            y2: y1 + Bounding box height.
-        """
-        w, h = bw * width, bh * height
-        x, y = bx * width + (w / 2), by * height + (h / 2)
-        return x, y, x + w, y + h
-
     def calculate_ratios(self, x1, y1, x2, y2):
         """
         Calculate relative object ratios in the labeled image.
@@ -150,7 +131,7 @@ class DataAugment:
         items_to_save = []
         for index, data in self.mapping.iterrows():
             image_name, object_name, object_index, bx, by, bw, bh = data
-            x1, y1, x2, y2 = self.ratios_to_coordinates(
+            x1, y1, x2, y2 = ratios_to_coordinates(
                 bx, by, bw, bh, self.image_width, self.image_height)
             items_to_save.append(
                 [image_name, x1, y1, x2, y2, object_name, object_index, bx, by, bw, bh])
@@ -263,15 +244,15 @@ class DataAugment:
             self.update_data(augmented_boxes, frame_before, augmented_image,
                              new_image_name, new_image_path)
             current_sequence += 1
-        self.augmented_images += 1
+            self.augmented_images += 1
         current = os.path.basename(image_path)
         completed = f'{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}'
         percent = (self.augmented_images / (self.total_images * len(self.augmentation_sequences)) * 100)
         print(f'\raugmenting {current}\t{completed}\t{percent}% completed', end='')
 
-    def augment_folder(self, batch_size=64, new_size=None):
+    def augment_photos_folder(self, batch_size=64, new_size=None):
         """
-        Augment a batch of images
+        Augment photos in Data/Photos/
         Args:
             batch_size: Size of each augmentation batch.
             new_size: tuple, new image size.
@@ -288,11 +269,15 @@ class DataAugment:
                     future_augmented.result()
         augmentation_frame = pd.DataFrame(self.augmentation_data,
                                           columns=self.mapping.columns)
-        full_frame = pd.concat([self.mapping, augmentation_frame],
-                               ignore_index=True,
-                               axis=1)
-        full_frame.to_csv(os.path.join(
-            self.image_folder, f'augmented_data.csv'), index=False)
+        saving_path = os.path.join(self.image_folder, f'augmented_data.csv')
+        augmentation_frame.to_csv(saving_path, index=False)
+        adjusted_mapping = adjust_non_voc_csv(self.labels_file, self.image_folder,
+                                              self.image_width, self.image_height)
+        adjusted_augmentation = adjust_non_voc_csv(saving_path, self.image_folder,
+                                                   self.image_width, self.image_height)
+        full_frame = pd.concat([adjusted_mapping, adjusted_augmentation])
+        full_frame.to_csv(saving_path.replace('augmented', 'full'), index=False)
+        return full_frame
 
 
 if __name__ == '__main__':
@@ -303,5 +288,5 @@ if __name__ == '__main__':
     aug.create_sequences([[{'sequence_group': 'meta', 'no': 5},
                            {'sequence_group': 'arithmetic', 'no': 3}],
                           [{'sequence_group': 'arithmetic', 'no': 2}]])
-    aug.augment_folder()
+    aug.augment_photos_folder()
 

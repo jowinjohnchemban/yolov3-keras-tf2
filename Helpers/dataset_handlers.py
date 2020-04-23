@@ -84,25 +84,31 @@ def read_example(example, feature_map, class_table, max_boxes, new_size=None):
     return x_train, y_train
 
 
-def write_tf_record(output_path, groups, data):
+def write_tf_record(output_path, groups, data, trainer=None):
     """
     Write data to TFRecord.
     Args:
         output_path: Full path to save.
         groups: pandas GroupBy object.
         data: pandas DataFrame
+        trainer: Main.Trainer object.
 
     Returns:
         None
     """
     print(f'Processing {os.path.split(output_path)[-1]}')
+    if trainer:
+        if 'train' in output_path:
+            trainer.train_tf_record = output_path
+        if 'test' in output_path:
+            trainer.valid_tf_record = output_path
     with tf.io.TFRecordWriter(output_path) as r_writer:
         for current_image, (image_path, objects) in enumerate(groups.iteritems(), 1):
             print(f'\rBuilding example: {current_image}/{len(groups)} ... '
                   f'{os.path.split(image_path)[-1]} '
                   f'{round(100 * (current_image / len(groups)))}% completed', end='')
             separate_data = pd.DataFrame(objects, columns=data.columns).T.to_numpy()
-            image_width, image_height, x_min, y_min, x_max, y_max = separate_data[2:8]
+            image_width, image_height, x_min, y_min, x_max, y_max = separate_data[2: 8]
             x_min /= image_width
             x_max /= image_width
             y_min /= image_height
@@ -114,7 +120,7 @@ def write_tf_record(output_path, groups, data):
     print()
 
 
-def save_tfr(data, output_folder, dataset_name, test_size=None):
+def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     """
     Transform and save dataset into TFRecord format.
     Args:
@@ -122,6 +128,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None):
         output_folder: Path to folder where TFRecord(s) will be saved.
         dataset_name: str name of the dataset.
         test_size: relative test subset size.
+        trainer: Main.Trainer object
 
     Returns:
         None
@@ -136,10 +143,11 @@ def save_tfr(data, output_folder, dataset_name, test_size=None):
         test_set = groups[separation_index:]
         training_path = os.path.join(output_folder, f'{dataset_name}_train.tfrecord')
         test_path = os.path.join(output_folder, f'{dataset_name}_test.tfrecord')
-        write_tf_record(training_path, training_set, data)
-        write_tf_record(test_path, test_set, data)
+        write_tf_record(training_path, training_set, data, trainer)
+        write_tf_record(test_path, test_set, data, trainer)
         return
-    write_tf_record(os.path.join(output_folder, f'{dataset_name}.tfrecord'), groups, data)
+    tf_record_path = os.path.join(output_folder, f'{dataset_name}.tfrecord')
+    write_tf_record(tf_record_path, groups, data, trainer)
 
 
 def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,

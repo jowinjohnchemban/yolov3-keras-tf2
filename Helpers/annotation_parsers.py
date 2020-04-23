@@ -3,7 +3,9 @@ from time import perf_counter
 import pandas as pd
 import json
 import os
+import numpy as np
 from Helpers.visual_tools import visualization_wrapper
+from Helpers.utils import ratios_to_coordinates
 
 
 def get_tree_item(parent, tag, file_path, find_all=False):
@@ -56,7 +58,7 @@ def parse_voc_file(file_path, voc_conf):
     return image_data
 
 
-def adjust_frame(frame, cache_file):
+def adjust_frame(frame, cache_file=None):
     """
     Add relative width, relative height and object ids to annotation pandas DataFrame.
     Args:
@@ -74,13 +76,14 @@ def adjust_frame(frame, cache_file):
     for object_name in list(frame['Object Name'].drop_duplicates()):
         frame.loc[frame['Object Name'] == object_name, 'Object ID'] = object_id
         object_id += 1
-    frame.to_csv(os.path.join('..', 'Caches', cache_file), index=False)
+    if cache_file:
+        frame.to_csv(os.path.join('..', 'Caches', cache_file), index=False)
     print(f'Parsed labels:\n{frame["Object Name"].value_counts()}')
     return frame
 
 
 @visualization_wrapper
-def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
+def parse_voc_folder(folder_path, voc_conf, cache_file=None):
     """
     Parse a folder containing voc xml annotation files.
     Args:
@@ -95,11 +98,12 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     # cache_path = os.path.join('..', 'Caches', cache_file)
     # if os.path.exists(cache_path):
     #     frame = pd.read_csv(cache_path)
-    #     print(f'XML Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+    #     print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
     #     return frame
     image_data = []
     frame_columns = [
-        'Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min', 'Y_min', 'X_max', 'Y_max']
+        'Image Path', 'Object Name', 'Image Width', 'Image Height',
+        'X_min', 'Y_min', 'X_max', 'Y_max']
     for file_name in os.listdir(folder_path):
         if file_name.endswith('.xml'):
             annotation_path = os.path.join(folder_path, file_name)
@@ -108,11 +112,47 @@ def parse_voc_folder(folder_path, voc_conf, cache_file='data_set_labels.csv'):
     frame = pd.DataFrame(image_data, columns=frame_columns)
     if frame.empty:
         raise ValueError(f'No labels were found in {os.path.abspath(folder_path)}')
-    return adjust_frame(frame, cache_file)
+    frame = adjust_frame(frame, cache_file)
+    return frame
+
+
+def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
+    """
+    Read relative data and return adjusted frame accordingly.
+    Args:
+        csv_file: .csv file containing the following columns:
+        [Image, Object Name, Object Index, bx, by, bw, bh]
+        image_path: Path prefix to be added.
+        image_width: image width.
+        image_height: image height
+    Returns:
+        pandas DataFrame with the following columns:
+        ['Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min',
+       'Y_min', 'X_max', 'Y_max', 'Relative Width', 'Relative Height',
+       'Object ID']
+    """
+    coordinates = []
+    old_frame = pd.read_csv(csv_file)
+    new_frame = pd.DataFrame()
+    new_frame['Image Path'] = old_frame['Image'].apply(
+        lambda item: os.path.join(image_path, item))
+    new_frame['Object Name'] = old_frame['Object Name']
+    new_frame['Image Width'] = image_width
+    new_frame['Image Height'] = image_height
+    new_frame['Relative Width'] = old_frame['bw']
+    new_frame['Relative Height'] = old_frame['bh']
+    new_frame['Object ID'] = old_frame['Object Index']
+    for index, row in old_frame.iterrows():
+        image, object_name, object_index, bx, by, bw, bh = row
+        co = ratios_to_coordinates(bx, by, bw, bh, image_width, image_height)
+        coordinates.append(co)
+    (new_frame['X_min'], new_frame['Y_min'],
+     new_frame['X_max'], new_frame['Y_max']) = np.array(coordinates).T
+    return new_frame[['Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min',
+                      'Y_min', 'X_max', 'Y_max', 'Relative Width', 'Relative Height', 'Object ID']]
 
 
 if __name__ == '__main__':
     t1 = perf_counter()
-    fr = parse_voc_folder('../../../Annotations', '../Config/voc_conf.json')
-    print(fr)
+    fr = parse_voc_folder('../../../beverly_hills/labels', '../Config/voc_conf.json')
     print(f'Time: {perf_counter() - t1} seconds')

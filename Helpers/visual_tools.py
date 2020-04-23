@@ -6,23 +6,26 @@ import cv2
 import os
 
 
-def save_fig(title):
+def save_fig(title, save_figures):
     """
     Save generated figures to Caches folder.
     Args:
         title: Figure title also the image to save file name.
+        save_figures: If True, figure will be saved
 
     Returns:
         None
     """
-    plt.savefig(os.path.join('..', 'Caches', f'{title}.png'))
+    if save_figures:
+        plt.savefig(os.path.join('..', 'Caches', f'{title}.png'))
 
 
-def visualize_box_relative_sizes(frame):
+def visualize_box_relative_sizes(frame, save_result=False):
     """
     Scatter plot annotation box relative sizes.
     Args:
         frame: pandas DataFrame with the annotation data.
+        save_result: If True, figure will be saved
 
     Returns:
         None
@@ -31,15 +34,16 @@ def visualize_box_relative_sizes(frame):
     sns.scatterplot(x=frame["Relative Width"], y=frame["Relative Height"], hue=frame["Object Name"],
                     palette='gist_rainbow')
     plt.title(title)
-    save_fig(title)
+    save_fig(title, save_result)
 
 
-def visualize_k_means_output(centroids, frame):
+def visualize_k_means_output(centroids, frame, save_result=False):
     """
     Visualize centroids and anchor box dimensions calculated.
     Args:
         centroids: 2D array of shape(k, 2) output of k-means.
         frame: pandas DataFrame with the annotation data.
+        save_result: If True, figure will be saved
 
     Returns:
         None
@@ -49,15 +53,16 @@ def visualize_k_means_output(centroids, frame):
     visualize_box_relative_sizes(frame)
     plt.title(title)
     ax.scatter(centroids[:, 0], centroids[:, 1], marker='*', s=200, c='black')
-    save_fig(title)
+    save_fig(title, save_result)
 
 
-def visualize_boxes(relative_anchors, sample_image):
+def visualize_boxes(relative_anchors, sample_image, save_result=False):
     """
     Visualize anchor boxes output of k-means.
     Args:
         relative_anchors: Output of k-means.
         sample_image: Path to image to display as background.
+        save_result: If True, figure will be saved
 
     Returns:
         None
@@ -77,7 +82,7 @@ def visualize_boxes(relative_anchors, sample_image):
     plt.imshow(img)
     plt.grid()
     plt.title(title)
-    save_fig(title)
+    save_fig(title, save_result)
 
 
 def visualization_wrapper(to_visualize):
