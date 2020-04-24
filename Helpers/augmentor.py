@@ -4,6 +4,8 @@ import imagesize
 import numpy as np
 import pandas as pd
 from imgaug import augmenters as iaa
+from imgaug import parameters as iap
+import imgaug as ia
 from pathlib import Path
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -17,7 +19,7 @@ class DataAugment:
     A tool for augmenting image data sets with bounding box support.
     """
     def __init__(self, labels_file, augmentation_map, workers=32,
-                 converted_coordinates_file=None):
+                 converted_coordinates_file=None, image_folder=None):
         """
         Initialize augmentation session.
         Args:
@@ -27,10 +29,14 @@ class DataAugment:
             workers: Parallel threads.
             converted_coordinates_file: csv file containing converted from relative
             to coordinates.
+            image_folder: Folder containing images other than Data/Photos/
         """
+        assert all([ia, iaa, iap])
         self.labels_file = labels_file
         self.mapping = pd.read_csv(labels_file)
         self.image_folder = Path(os.path.join('..', 'Data', 'Photos')).absolute().resolve()
+        if image_folder:
+            self.image_folder = Path(image_folder).absolute().resolve()
         self.image_paths = [Path(os.path.join(self.image_folder, image)).absolute().resolve()
                             for image in os.listdir(self.image_folder)
                             if not image.startswith('.')]
@@ -279,14 +285,49 @@ class DataAugment:
         full_frame.to_csv(saving_path.replace('augmented', 'adjusted_aug'), index=False)
         return full_frame
 
+    @staticmethod
+    def display_window(out, move_after):
+        for bef, aft in out:
+            cv2.imshow('before', bef)
+            cv2.imshow('after', aft)
+            cv2.moveWindow('after', *move_after)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+    def display_with_bbs(self, augment, images, image_paths, out, move_after):
+        for image, image_path in zip(images, image_paths):
+            bbs, frame_before = self.get_bounding_boxes_over_image(image_path)
+            image_aug, bbs_aug = augment(image=image, bounding_boxes=bbs)
+            image_before = bbs.draw_on_image(image, size=2)
+            image_after = bbs_aug.draw_on_image(image_aug, size=2, color=[0, 0, 255])
+            out.append([image_before, image_after])
+        self.display_window(out, move_after)
+        out.clear()
+
+    def preview_augmentations(self, tensor_size, sequence_group, display_boxes=False,
+                              move_after=(600, 0)):
+        images = [cv2.imread(f'{image}') for image in self.image_paths[:tensor_size]]
+        image_tensor = np.array(images)
+        to_display = []
+        for item in self.augmentation_map[sequence_group]:
+            print(item['no'], item['augmentation'])
+            try:
+                current_augment = eval(item['augmentation'])
+                if not display_boxes:
+                    to_display = current_augment(images=image_tensor)
+                    self.display_window(zip(image_tensor, to_display), move_after)
+                if display_boxes:
+                    self.display_with_bbs(
+                        current_augment, images, self.image_paths[:tensor_size],
+                        to_display, move_after)
+            except Exception as e:
+                print(f'{e} for {item}')
+
 
 if __name__ == '__main__':
-    aug = DataAugment(
-        '../../../beverly_hills/bh_labels.csv',
-        augmentations,
-        converted_coordinates_file='scratch/label_coordinates.csv')
-    aug.create_sequences([[{'sequence_group': 'meta', 'no': 5},
-                           {'sequence_group': 'arithmetic', 'no': 3}],
-                          [{'sequence_group': 'arithmetic', 'no': 2}]])
-    aug.augment_photos_folder()
+    aug = DataAugment('../../../beverly_hills/bh_labels.csv',
+                      augmentations,
+                      converted_coordinates_file='scratch/label_coordinates.csv',
+                      image_folder='../../../beverly_hills/photos')
+    aug.preview_augmentations(2, 'arithmetic', True)
 

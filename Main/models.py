@@ -6,6 +6,7 @@ from tensorflow.keras import Model
 import tensorflow as tf
 import numpy as np
 import os
+from Helpers.utils import get_boxes
 
 
 class V3Model:
@@ -96,24 +97,6 @@ class V3Model:
         x = self.apply_func(Lambda, x, lambda item: tf.reshape(item, (
             -1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5)))
         return self.apply_func(Model, x_input, inputs, x)
-    
-    @staticmethod
-    def get_boxes(pred, anchors, classes):
-        grid_size = tf.shape(pred)[1]
-        box_xy, box_wh, object_probability, class_probabilities = tf.split(
-            pred, (2, 2, 1, classes), axis=-1)
-        box_xy = tf.sigmoid(box_xy)
-        object_probability = tf.sigmoid(object_probability)
-        class_probabilities = tf.sigmoid(class_probabilities)
-        pred_box = tf.concat((box_xy, box_wh), axis=-1)
-        grid = tf.meshgrid(tf.range(grid_size), tf.range(grid_size))
-        grid = tf.expand_dims(tf.stack(grid, axis=-1), axis=2)
-        box_xy = (box_xy + tf.cast(grid, tf.float32)) / tf.cast(grid_size, tf.float32)
-        box_wh = tf.exp(box_wh) * anchors
-        box_x1y1 = box_xy - box_wh / 2
-        box_x2y2 = box_xy + box_wh / 2
-        bbox = tf.concat([box_x1y1, box_x2y2], axis=-1)
-        return bbox, object_probability, class_probabilities, pred_box
 
     def get_nms(self, outputs):
         boxes, conf, type_ = [], [], []
@@ -221,11 +204,11 @@ class V3Model:
         output_2 = self.output(detection_2, 128)
         self.training_model = Model(input_initial, [output_0, output_1, output_2],
                                     name='training_model')
-        boxes_0 = self.apply_func(Lambda, output_0, lambda item: self.get_boxes(
+        boxes_0 = self.apply_func(Lambda, output_0, lambda item: get_boxes(
             item, self.anchors[self.masks[0]], self.classes))
-        boxes_1 = self.apply_func(Lambda, output_1, lambda item: self.get_boxes(
+        boxes_1 = self.apply_func(Lambda, output_1, lambda item: get_boxes(
             item, self.anchors[self.masks[1]], self.classes))
-        boxes_2 = self.apply_func(Lambda, output_2, lambda item: self.get_boxes(
+        boxes_2 = self.apply_func(Lambda, output_2, lambda item: get_boxes(
             item, self.anchors[self.masks[2]], self.classes))
         outputs = self.apply_func(Lambda, (boxes_0[:3], boxes_1[:3], boxes_2[:3]),
                                   lambda item: self.get_nms(item))

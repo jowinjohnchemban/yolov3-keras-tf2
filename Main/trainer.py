@@ -9,8 +9,9 @@ from Helpers.anchors import k_means, generate_anchors
 from Helpers.augmentor import DataAugment
 from Config.augmentation_options import augmentations
 from Main.models import V3Model
-from Helpers.model_helpers import transform_images, transform_targets
+from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
+from Helpers.utils import calculate_loss
 
 
 class Trainer(V3Model):
@@ -113,12 +114,17 @@ class Trainer(V3Model):
             raise ValueError(f'No validation TFRecord specified')
         training_dataset = self.initialize_dataset(self.train_tf_record, batch_size)
         valid_dataset = self.initialize_dataset(self.valid_tf_record, batch_size)
+        optimizer = tf.keras.optimizers.Adam(learning_rate)
+        loss = [calculate_loss(self.anchors[mask], self.classes, self.iou_threshold)
+                for mask in self.masks]
+        self.training_model.compile(optimizer=optimizer, loss=loss)
 
 
 if __name__ == '__main__':
     tr = Trainer((416, 416, 3),
                  '../Config/beverly_hills.txt',
-                 1344, 756)
+                 1344, 756, '../Data/TFRecords/beverly_hills_train.tfrecord',
+                 '../Data/TFRecords/beverly_hills_test.tfrecord')
     anc = {'anchor_no': 9, 'relative_labels': '../../../beverly_hills/bh_labels.csv'}
     dt = {'relative_labels': '../../../beverly_hills/bh_labels.csv',
           'dataset_name': 'beverly_hills',
@@ -128,5 +134,5 @@ if __name__ == '__main__':
                          {'sequence_group': 'arithmetic', 'no': 3}],
                         [{'sequence_group': 'arithmetic', 'no': 2}]],
           }
-    tr.train(50, 16, 1e-5, anc, dt)
+    tr.train(50, 16, 1e-5)
 
