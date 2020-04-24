@@ -269,14 +269,14 @@ class DataAugment:
                     future_augmented.result()
         augmentation_frame = pd.DataFrame(self.augmentation_data,
                                           columns=self.mapping.columns)
-        saving_path = os.path.join(self.image_folder, f'augmented_data.csv')
-        augmentation_frame.to_csv(saving_path, index=False)
+        saving_path = os.path.join(self.image_folder, f'augmented_data_plus_original.csv')
+        pd.concat([self.mapping, augmentation_frame]).to_csv(saving_path, index=False)
         adjusted_mapping = adjust_non_voc_csv(self.labels_file, self.image_folder,
                                               self.image_width, self.image_height)
         adjusted_augmentation = adjust_non_voc_csv(saving_path, self.image_folder,
                                                    self.image_width, self.image_height)
         full_frame = pd.concat([adjusted_mapping, adjusted_augmentation])
-        full_frame.to_csv(saving_path.replace('augmented', 'full'), index=False)
+        full_frame.to_csv(saving_path.replace('augmented', 'adjusted_aug'), index=False)
         return full_frame
 
 

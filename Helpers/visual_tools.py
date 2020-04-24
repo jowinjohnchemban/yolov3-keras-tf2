@@ -96,7 +96,7 @@ def visualization_wrapper(to_visualize):
     """
     def visualized(*args, **kwargs):
         result = to_visualize(*args, **kwargs)
-        if to_visualize.__name__ == 'parse_voc_folder':
+        if to_visualize.__name__ in ['parse_voc_folder', 'adjust_non_voc_csv']:
             visualize_box_relative_sizes(result)
             plt.show()
         if to_visualize.__name__ == 'k_means':

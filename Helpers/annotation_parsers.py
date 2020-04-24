@@ -116,6 +116,7 @@ def parse_voc_folder(folder_path, voc_conf, cache_file=None):
     return frame
 
 
+@visualization_wrapper
 def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
     """
     Read relative data and return adjusted frame accordingly.
@@ -148,6 +149,7 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
         coordinates.append(co)
     (new_frame['X_min'], new_frame['Y_min'],
      new_frame['X_max'], new_frame['Y_max']) = np.array(coordinates).T
+    print(f'Parsed labels:\n{new_frame["Object Name"].value_counts()}')
     return new_frame[['Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min',
                       'Y_min', 'X_max', 'Y_max', 'Relative Width', 'Relative Height', 'Object ID']]
 
