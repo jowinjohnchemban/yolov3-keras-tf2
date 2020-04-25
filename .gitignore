@@ -17,5 +17,5 @@
 *.tf
 *.tfrecord
 !.gitkeep
-*.idea
+.idea
 *.iml
