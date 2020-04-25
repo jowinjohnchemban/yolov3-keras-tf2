@@ -40,6 +40,7 @@ class DataAugment:
         self.image_paths = [Path(os.path.join(self.image_folder, image)).absolute().resolve()
                             for image in os.listdir(self.image_folder)
                             if not image.startswith('.')]
+        self.image_paths_copy = self.image_paths.copy()
         self.image_width, self.image_height = imagesize.get(self.image_paths[0])
         self.converted_coordinates = pd.read_csv(converted_coordinates_file) if (
                 converted_coordinates_file) else self.relative_to_coordinates()
@@ -189,9 +190,9 @@ class DataAugment:
         Returns:
             numpy array of shape (batch_size, height, width, channels)
         """
-        batch = [f'{self.image_paths.pop()!s}'
+        batch = [f'{self.image_paths_copy.pop()!s}'
                  for _ in range(batch_size)
-                 if self.image_paths]
+                 if self.image_paths_copy]
         loaded = []
         paths = []
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
@@ -267,7 +268,7 @@ class DataAugment:
             None
         """
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
-            while self.image_paths:
+            while self.image_paths_copy:
                 current_batch, current_paths = self.load_batch(new_size, batch_size)
                 future_augmentations = {executor.submit(self.augment_image, image, path): path
                                         for image, path in zip(current_batch, current_paths)}
@@ -286,7 +287,17 @@ class DataAugment:
         return full_frame
 
     @staticmethod
-    def display_window(out, move_after):
+    def display_windows(out, move_after):
+        """
+        Display image before/after augmentation.
+        Args:
+            out: A list containing images to display
+            move_after: tuple(x, y) coordinates to move the 'after' window
+            display window.
+
+        Returns:
+            None
+        """
         for bef, aft in out:
             cv2.imshow('before', bef)
             cv2.imshow('after', aft)
@@ -295,17 +306,57 @@ class DataAugment:
             cv2.destroyAllWindows()
 
     def display_with_bbs(self, augment, images, image_paths, out, move_after):
+        """
+        Display augmentation results(before/after) with bounding boxes.
+        Args:
+            augment: imgaug augmentation sequence.
+            images: numpy array of images.
+            image_paths: A list of paths of images.
+            out: A list to hold display results.
+            move_after: tuple(x, y) coordinates to move the 'after' window.
+
+        Returns:
+            None
+        """
         for image, image_path in zip(images, image_paths):
             bbs, frame_before = self.get_bounding_boxes_over_image(image_path)
             image_aug, bbs_aug = augment(image=image, bounding_boxes=bbs)
             image_before = bbs.draw_on_image(image, size=2)
             image_after = bbs_aug.draw_on_image(image_aug, size=2, color=[0, 0, 255])
             out.append([image_before, image_after])
-        self.display_window(out, move_after)
+        self.display_windows(out, move_after)
         out.clear()
 
     def preview_augmentations(self, tensor_size, sequence_group, display_boxes=False,
                               move_after=(600, 0)):
+        """
+        Preview all augmentation options on images in self.paths
+         in selected sequence_group
+        Args:
+            tensor_size: The number of images to display from self.paths
+            sequence_group: str, one of the following:
+                - meta
+                - arithmetic
+                - artistic
+                - blend
+                - gaussian_blur
+                - color
+                - contrast
+                - convolution
+                - edges
+                - flip
+                - geometric
+                - corrupt_like
+                - pi_like
+                - pooling
+                - segmentation
+                - size
+            display_boxes: Preview augmentations with bounding boxes before/after(if any)
+            move_after: tuple(x, y) coordinates to move the 'after' window.
+
+        Returns:
+            None
+        """
         images = [cv2.imread(f'{image}') for image in self.image_paths[:tensor_size]]
         image_tensor = np.array(images)
         to_display = []
@@ -315,7 +366,7 @@ class DataAugment:
                 current_augment = eval(item['augmentation'])
                 if not display_boxes:
                     to_display = current_augment(images=image_tensor)
-                    self.display_window(zip(image_tensor, to_display), move_after)
+                    self.display_windows(zip(image_tensor, to_display), move_after)
                 if display_boxes:
                     self.display_with_bbs(
                         current_augment, images, self.image_paths[:tensor_size],
@@ -329,5 +380,5 @@ if __name__ == '__main__':
                       augmentations,
                       converted_coordinates_file='scratch/label_coordinates.csv',
                       image_folder='../../../beverly_hills/photos')
-    aug.preview_augmentations(2, 'arithmetic', True)
+    aug.preview_augmentations(2, 'meta', True)
 

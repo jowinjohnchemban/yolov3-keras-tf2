@@ -17,3 +17,4 @@
 *.tf
 *.tfrecord
 !.gitkeep
+*.idea
