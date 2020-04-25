@@ -41,6 +41,8 @@ class DataAugment:
                             for image in os.listdir(self.image_folder)
                             if not image.startswith('.')]
         self.image_paths_copy = self.image_paths.copy()
+        if not self.image_paths:
+            raise ValueError(f'No photos given')
         self.image_width, self.image_height = imagesize.get(self.image_paths[0])
         self.converted_coordinates = pd.read_csv(converted_coordinates_file) if (
                 converted_coordinates_file) else self.relative_to_coordinates()
@@ -80,8 +82,8 @@ class DataAugment:
                      for item in group]
                     for group in sequence_dicts]
         self.augmentation_sequences = [
-            iaa.Sequential([eval(item)
-                            for item in group], random_order=True)
+            iaa.Sequential([iaa.SomeOf((0, 5), [eval(item)
+                            for item in group])], random_order=True)
             for group in augments]
         return self.augmentation_sequences
 
@@ -218,6 +220,8 @@ class DataAugment:
             None
         """
         frame_after = pd.DataFrame(bbs_aug.bounding_boxes, columns=['x1y1', 'x2y2'])
+        if frame_after.empty:  # some post-augmentation photos do not contain bounding boxes
+            return
         frame_after = pd.DataFrame(np.hstack((frame_after['x1y1'].tolist(), frame_after['x2y2'].
                                               tolist())),
                                    columns=['x1', 'y1', 'x2', 'y2']).astype('int64')
@@ -380,5 +384,7 @@ if __name__ == '__main__':
                       augmentations,
                       converted_coordinates_file='scratch/label_coordinates.csv',
                       image_folder='../../../beverly_hills/photos')
-    aug.preview_augmentations(2, 'meta', True)
+    for it in augmentations:
+        print(it)
+        aug.preview_augmentations(2, it, True)
 

@@ -1,5 +1,27 @@
 import tensorflow as tf
 from tensorflow.keras.losses import sparse_categorical_crossentropy, binary_crossentropy
+import logging
+from datetime import datetime
+
+
+def get_logger():
+    """
+    Get the default logger.
+    Returns:
+        The default logger.
+    """
+    formatter = logging.Formatter('%(asctime)s %(name)s.%(funcName)s +%(lineno)s: '
+                                  '%(levelname)-8s [%(process)d] %(message)s')
+    logger = logging.getLogger('session_log')
+    logger.setLevel(logging.DEBUG)
+    file_title = datetime.now().strftime('Logs/%Y-%m-%d %H:%M:%S session.log')
+    file_handler = logging.FileHandler(file_title)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    return logger
 
 
 def ratios_to_coordinates(bx, by, bw, bh, width, height):

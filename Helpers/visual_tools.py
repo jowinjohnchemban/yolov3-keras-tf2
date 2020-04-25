@@ -31,6 +31,9 @@ def visualize_box_relative_sizes(frame, save_result=False):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
+    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')) or (
+            frame is None):
+        return
     sns.scatterplot(x=frame["Relative Width"], y=frame["Relative Height"], hue=frame["Object Name"],
                     palette='gist_rainbow')
     plt.title(title)
@@ -49,6 +52,9 @@ def visualize_k_means_output(centroids, frame, save_result=False):
         None
     """
     title = f'{centroids.shape[0]} Centroids representing relative anchor sizes.'
+    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')) or (
+            frame is None):
+        return
     fig, ax = plt.subplots()
     visualize_box_relative_sizes(frame)
     plt.title(title)
@@ -68,6 +74,8 @@ def visualize_boxes(relative_anchors, sample_image, save_result=False):
         None
     """
     title = 'Generated anchors relative to sample image size'
+    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')):
+        return
     img = cv2.imread(sample_image)
     width, height = imagesize.get(sample_image)
     center = int(width / 2), int(height / 2)
@@ -105,7 +113,7 @@ def visualization_wrapper(to_visualize):
                 return result
             visualize_k_means_output(*result)
             plt.show()
-            visualize_boxes(result[0], '../sample_img.png')
+            visualize_boxes(result[0], '../sample_image.png')
             plt.show()
         return result
     return visualized

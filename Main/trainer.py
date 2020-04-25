@@ -230,9 +230,10 @@ if __name__ == '__main__':
           'dataset_name': 'beverly_hills',
           'augmentation': True,
           'test_size': 0.2,
-          'sequences': [[{'sequence_group': 'meta', 'no': 5},
-                         {'sequence_group': 'arithmetic', 'no': 3}],
-                        [{'sequence_group': 'arithmetic', 'no': 2}]],
-          }
-    tr.train(50, 16, 1e-5)
+          'sequences': [[],
+                        [],
+                        [],
+                        [],
+                        []]}
+    tr.train(50, 16, 1e-5, new_dataset_conf=dt)
 
