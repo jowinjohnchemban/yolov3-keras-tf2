@@ -6,7 +6,7 @@ from tensorflow.keras import Model
 import tensorflow as tf
 import numpy as np
 import os
-from Helpers.utils import get_boxes
+from Helpers.utils import get_boxes, timer, default_logger
 
 
 class V3Model:
@@ -119,6 +119,7 @@ class V3Model:
         )
         return boxes, scores, classes, valid_detections
 
+    @timer(default_logger)
     def create_models(self):
         input_initial = self.apply_func(Input, shape=self.input_shape)
         x = self.convolution_block(input_initial, 32, 3, 1, True)
@@ -213,8 +214,10 @@ class V3Model:
         outputs = self.apply_func(Lambda, (boxes_0[:3], boxes_1[:3], boxes_2[:3]),
                                   lambda item: self.get_nms(item))
         self.inference_model = Model(input_initial, outputs, name='inference_model')
+        default_logger.info('Training and inference models created')
         return self.training_model, self.inference_model
 
+    @timer(default_logger)
     def load_dark_net_weights(self, weights_file):
         assert self.classes == 80, f'DarkNet model must have 80 classes, not {self.classes}'
         if weights_file.endswith('.tf'):
@@ -260,6 +263,7 @@ class V3Model:
             assert len(weights_data.read()) == 0, 'failed to read all data'
         print()
         print(f'Loading pre-trained weights ... done')
+        default_logger.info('Loaded DarkNet weights')
 
 
 if __name__ == '__main__':

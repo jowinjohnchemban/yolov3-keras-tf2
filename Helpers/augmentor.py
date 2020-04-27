@@ -10,7 +10,7 @@ from pathlib import Path
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Config.augmentation_options import augmentations
-from Helpers.utils import ratios_to_coordinates
+from Helpers.utils import ratios_to_coordinates, timer, default_logger
 from Helpers.annotation_parsers import adjust_non_voc_csv
 
 
@@ -42,6 +42,7 @@ class DataAugment:
                             if not image.startswith('.')]
         self.image_paths_copy = self.image_paths.copy()
         if not self.image_paths:
+            default_logger.error(f'Augmentation aborted: no photos found in {self.image_folder}')
             raise ValueError(f'No photos given')
         self.image_width, self.image_height = imagesize.get(self.image_paths[0])
         self.converted_coordinates = pd.read_csv(converted_coordinates_file) if (
@@ -78,6 +79,8 @@ class DataAugment:
         sequence_dicts = [[self.augmentation_map[item['sequence_group']][item['no'] - 1]
                            for item in group]
                           for group in sequences]
+        total_target = (len(sequence_dicts) * len(self.image_paths)) + len(self.image_paths)
+        default_logger.info(f'Total images(old + augmented): {total_target}')
         augments = [[item['augmentation']
                      for item in group]
                     for group in sequence_dicts]
@@ -152,6 +155,7 @@ class DataAugment:
             ['x1', 'y1', 'x2', 'y2']].astype('int64')
         if out_file:
             new_data.to_csv(out_file, index=False)
+        default_logger.info(f'Converted labels in {self.labels_file} to coordinates')
         return new_data
 
     def get_image_data(self, image_path):
@@ -221,6 +225,8 @@ class DataAugment:
         """
         frame_after = pd.DataFrame(bbs_aug.bounding_boxes, columns=['x1y1', 'x2y2'])
         if frame_after.empty:  # some post-augmentation photos do not contain bounding boxes
+            default_logger.warning(f'skipping image: {new_name}: no bounding boxes after '
+                                   f'augmentation')
             return
         frame_after = pd.DataFrame(np.hstack((frame_after['x1y1'].tolist(), frame_after['x2y2'].
                                               tolist())),
@@ -261,6 +267,7 @@ class DataAugment:
         percent = (self.augmented_images / (self.total_images * len(self.augmentation_sequences)) * 100)
         print(f'\raugmenting {current}\t{completed}\t{percent}% completed', end='')
 
+    @timer(default_logger)
     def augment_photos_folder(self, batch_size=64, new_size=None):
         """
         Augment photos in Data/Photos/
@@ -271,6 +278,9 @@ class DataAugment:
         Returns:
             None
         """
+        default_logger.info(f'Started augmentation with {self.workers} workers')
+        default_logger.info(f'Total images to augment: {self.total_images}')
+        default_logger.info(f'Session assigned id: {self.session_id}')
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
             while self.image_paths_copy:
                 current_batch, current_paths = self.load_batch(new_size, batch_size)
@@ -278,16 +288,20 @@ class DataAugment:
                                         for image, path in zip(current_batch, current_paths)}
                 for future_augmented in as_completed(future_augmentations):
                     future_augmented.result()
+        default_logger.info(f'Augmentation completed')
         augmentation_frame = pd.DataFrame(self.augmentation_data,
                                           columns=self.mapping.columns)
         saving_path = os.path.join(self.image_folder, f'augmented_data_plus_original.csv')
         pd.concat([self.mapping, augmentation_frame]).to_csv(saving_path, index=False)
+        default_logger.info(f'Saved old + augmented labels to {saving_path}')
         adjusted_mapping = adjust_non_voc_csv(self.labels_file, self.image_folder,
                                               self.image_width, self.image_height)
         adjusted_augmentation = adjust_non_voc_csv(saving_path, self.image_folder,
                                                    self.image_width, self.image_height)
         full_frame = pd.concat([adjusted_mapping, adjusted_augmentation])
-        full_frame.to_csv(saving_path.replace('augmented', 'adjusted_aug'), index=False)
+        adjusted_saving_path = saving_path.replace('augmented', 'adjusted_aug')
+        full_frame.to_csv(adjusted_saving_path, index=False)
+        default_logger.info(f'Saved old + augmented (adjusted) labels to {adjusted_saving_path}')
         return full_frame
 
     @staticmethod

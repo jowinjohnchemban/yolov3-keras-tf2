@@ -1,5 +1,6 @@
 import numpy as np
 from Helpers.visual_tools import visualization_wrapper
+from Helpers.utils import default_logger, timer
 
 
 def iou(relative_sizes, centroids, k):
@@ -31,6 +32,7 @@ def iou(relative_sizes, centroids, k):
     return result
 
 
+@timer(default_logger)
 @visualization_wrapper
 def k_means(relative_sizes, k, distance_func=np.median, frame=None):
     """
@@ -56,6 +58,7 @@ def k_means(relative_sizes, k, distance_func=np.median, frame=None):
         iteration += 1
         current_nearest = np.argmin(distances, axis=1)
         if (last_nearest == current_nearest).all():
+            default_logger.info(f'Generated {len(centroids)} anchors in {iteration} iterations')
             return centroids, frame
         for anchor in range(k):
             centroids[anchor] = distance_func(relative_sizes[current_nearest == anchor], axis=0)

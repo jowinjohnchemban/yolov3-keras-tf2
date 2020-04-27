@@ -1,27 +1,45 @@
 import tensorflow as tf
 from tensorflow.keras.losses import sparse_categorical_crossentropy, binary_crossentropy
 import logging
-from datetime import datetime
+from logging import handlers
+from time import perf_counter
+import os
 
 
 def get_logger():
-    """
-    Get the default logger.
-    Returns:
-        The default logger.
-    """
     formatter = logging.Formatter('%(asctime)s %(name)s.%(funcName)s +%(lineno)s: '
                                   '%(levelname)-8s [%(process)d] %(message)s')
     logger = logging.getLogger('session_log')
     logger.setLevel(logging.DEBUG)
-    file_title = datetime.now().strftime('Logs/%Y-%m-%d %H:%M:%S session.log')
-    file_handler = logging.FileHandler(file_title)
+    file_title = os.path.join('Logs', 'session.log')
+    if 'Logs' not in os.listdir():
+        file_title = f'{os.path.join("..", file_title)}'
+    file_handler = handlers.RotatingFileHandler(file_title, backupCount=10)
+    file_handler.doRollover()
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     return logger
+
+
+default_logger = get_logger()
+
+
+def timer(logger):
+    def timed(func):
+        def wrapper(*args, **kwargs):
+            start_time = perf_counter()
+            result = func(*args, **kwargs)
+            total_time = perf_counter() - start_time
+            if logger is not None:
+                logger.info(f'{func.__name__} execution time: '
+                            f'{total_time} seconds')
+            if result is not None:
+                return result
+        return wrapper
+    return timed
 
 
 def ratios_to_coordinates(bx, by, bw, bh, width, height):
@@ -59,14 +77,14 @@ def transform_images(x_train, size):
 
 @tf.function
 def transform_targets_for_output(y_true, grid_size, anchor_idxs):
-    N = tf.shape(y_true)[0]
+    n = tf.shape(y_true)[0]
     y_true_out = tf.zeros(
-        (N, grid_size, grid_size, tf.shape(anchor_idxs)[0], 6))
+        (n, grid_size, grid_size, tf.shape(anchor_idxs)[0], 6))
     anchor_idxs = tf.cast(anchor_idxs, tf.int32)
     indexes = tf.TensorArray(tf.int32, 1, dynamic_size=True)
     updates = tf.TensorArray(tf.float32, 1, dynamic_size=True)
     idx = 0
-    for i in tf.range(N):
+    for i in tf.range(n):
         for j in tf.range(tf.shape(y_true)[1]):
             if tf.equal(y_true[i][j][2], 0):
                 continue
@@ -182,5 +200,6 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
         class_loss = tf.reduce_sum(class_loss, axis=(1, 2, 3))
         return xy_loss + wh_loss + obj_loss + class_loss
     return yolo_loss
+
 
 

@@ -11,7 +11,8 @@ from Config.augmentation_options import augmentations
 from Main.models import V3Model
 from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
-from Helpers.utils import calculate_loss
+from Helpers.utils import calculate_loss, timer, default_logger
+from Config.augmentation_presets import PRESET_1
 
 
 class Trainer(V3Model):
@@ -94,6 +95,7 @@ class Trainer(V3Model):
         centroids, _ = k_means(relative_dims, anchor_no, frame=labels_frame)
         self.anchors = generate_anchors(self.image_width, self.image_height,
                                         centroids) / self.input_shape[0]
+        default_logger.info('Changed default anchors to generated ones')
 
     def generate_new_frame(self, new_dataset_conf):
         """
@@ -180,6 +182,7 @@ class Trainer(V3Model):
         return augment.augment_photos_folder(
             batch_size or 64, new_augmentation_size)
 
+    @timer(default_logger)
     def train(self, epochs, batch_size, learning_rate, new_anchors_conf=None,
               new_dataset_conf=None):
         """
@@ -194,9 +197,11 @@ class Trainer(V3Model):
         Returns:
             None
         """
+        default_logger.info(f'Training started')
         physical_devices = tf.config.experimental.list_physical_devices('GPU')
         if len(physical_devices) > 0:
             tf.config.experimental.set_memory_growth(physical_devices[0], True)
+            default_logger.info('GPU activated')
         if new_anchors_conf:
             print(f'Generating new anchors ...')
             self.generate_new_anchors(new_anchors_conf)
@@ -230,10 +235,6 @@ if __name__ == '__main__':
           'dataset_name': 'beverly_hills',
           'augmentation': True,
           'test_size': 0.2,
-          'sequences': [[],
-                        [],
-                        [],
-                        [],
-                        []]}
+          'sequences': eval(PRESET_1)}
     tr.train(50, 16, 1e-5, new_dataset_conf=dt)
 

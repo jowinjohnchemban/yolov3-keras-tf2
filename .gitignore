@@ -20,3 +20,4 @@
 .idea
 *.iml
 !sample_image.png
+*.log

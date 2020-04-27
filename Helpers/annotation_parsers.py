@@ -5,7 +5,7 @@ import json
 import os
 import numpy as np
 from Helpers.visual_tools import visualization_wrapper
-from Helpers.utils import ratios_to_coordinates
+from Helpers.utils import ratios_to_coordinates, default_logger
 
 
 def get_tree_item(parent, tag, file_path, find_all=False):
@@ -62,7 +62,7 @@ def adjust_frame(frame, cache_file=None):
     """
     Add relative width, relative height and object ids to annotation pandas DataFrame.
     Args:
-        frame: pandas DataFrame containing annotation data.
+        frame: pandas DataFrame containing coordinates instead of relative labels.
         cache_file: cache_file: csv file name containing current session labels.
 
     Returns:
@@ -104,12 +104,17 @@ def parse_voc_folder(folder_path, voc_conf, cache_file=None):
     frame_columns = [
         'Image Path', 'Object Name', 'Image Width', 'Image Height',
         'X_min', 'Y_min', 'X_max', 'Y_max']
-    for file_name in os.listdir(folder_path):
-        if file_name.endswith('.xml'):
-            annotation_path = os.path.join(folder_path, file_name)
-            image_labels = parse_voc_file(annotation_path, voc_conf)
-            image_data.extend(image_labels)
+    xml_files = [file_name for file_name in os.listdir(folder_path)
+                 if file_name.endswith('.xml')]
+    for file_name in xml_files:
+        annotation_path = os.path.join(folder_path, file_name)
+        image_labels = parse_voc_file(annotation_path, voc_conf)
+        image_data.extend(image_labels)
     frame = pd.DataFrame(image_data, columns=frame_columns)
+    classes = frame['Object Name'].drop_duplicates()
+    default_logger.info(f'Read {len(xml_files)} xml files')
+    default_logger.info(f'Received {len(frame)} labels containing '
+                        f'{len(classes)} classes')
     if frame.empty:
         raise ValueError(f'No labels were found in {os.path.abspath(folder_path)}')
     frame = adjust_frame(frame, cache_file)
@@ -150,6 +155,10 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
     (new_frame['X_min'], new_frame['Y_min'],
      new_frame['X_max'], new_frame['Y_max']) = np.array(coordinates).T
     print(f'Parsed labels:\n{new_frame["Object Name"].value_counts()}')
+    classes = new_frame['Object Name'].drop_duplicates()
+    default_logger.info(f'Adjustment from existing received {len(new_frame)} labels containing '
+                        f'{len(classes)} classes')
+    default_logger.info(f'Added prefix to images: {image_path}')
     return new_frame[['Image Path', 'Object Name', 'Image Width', 'Image Height', 'X_min',
                       'Y_min', 'X_max', 'Y_max', 'Relative Width', 'Relative Height', 'Object ID']]
 

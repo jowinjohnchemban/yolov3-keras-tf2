@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import hashlib
 import os
+from Helpers.utils import default_logger
 
 
 def get_feature_map():
@@ -144,10 +145,13 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
         training_path = os.path.join(output_folder, f'{dataset_name}_train.tfrecord')
         test_path = os.path.join(output_folder, f'{dataset_name}_test.tfrecord')
         write_tf_record(training_path, training_set, data, trainer)
+        default_logger.info(f'Saved training TFRecord: {training_path}')
         write_tf_record(test_path, test_set, data, trainer)
+        default_logger.info(f'Saved validation TFRecord: {test_path}')
         return
     tf_record_path = os.path.join(output_folder, f'{dataset_name}.tfrecord')
     write_tf_record(tf_record_path, groups, data, trainer)
+    default_logger.info(f'Saved TFRecord {tf_record_path}')
 
 
 def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
@@ -170,6 +174,7 @@ def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
     class_table = tf.lookup.StaticHashTable(text_init, -1)
     files = tf.data.Dataset.list_files(tf_record_file)
     dataset = files.flat_map(tf.data.TFRecordDataset)
+    default_logger.info(f'Read TFRecord: {tf_record_file}')
     return dataset.map(
         lambda x: read_example(x, feature_map, class_table, max_boxes, new_size))
 

@@ -17,10 +17,11 @@ def save_fig(title, save_figures):
         None
     """
     if save_figures:
-        plt.savefig(os.path.join('..', 'Caches', f'{title}.png'))
+        saving_path = os.path.join('..', 'Caches', f'{title}.png')
+        plt.savefig(saving_path)
 
 
-def visualize_box_relative_sizes(frame, save_result=False):
+def visualize_box_relative_sizes(frame, save_result=True):
     """
     Scatter plot annotation box relative sizes.
     Args:
@@ -40,7 +41,7 @@ def visualize_box_relative_sizes(frame, save_result=False):
     save_fig(title, save_result)
 
 
-def visualize_k_means_output(centroids, frame, save_result=False):
+def visualize_k_means_output(centroids, frame, save_result=True):
     """
     Visualize centroids and anchor box dimensions calculated.
     Args:
@@ -62,7 +63,7 @@ def visualize_k_means_output(centroids, frame, save_result=False):
     save_fig(title, save_result)
 
 
-def visualize_boxes(relative_anchors, sample_image, save_result=False):
+def visualize_boxes(relative_anchors, sample_image, save_result=True):
     """
     Visualize anchor boxes output of k-means.
     Args:
