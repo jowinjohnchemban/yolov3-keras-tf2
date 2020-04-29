@@ -15,7 +15,6 @@ def get_logger():
     if 'Logs' not in os.listdir():
         file_title = f'{os.path.join("..", file_title)}'
     file_handler = handlers.RotatingFileHandler(file_title, backupCount=10)
-    file_handler.doRollover()
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     console_handler = logging.StreamHandler()
@@ -200,6 +199,8 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
         class_loss = tf.reduce_sum(class_loss, axis=(1, 2, 3))
         return xy_loss + wh_loss + obj_loss + class_loss
     return yolo_loss
+
+
 
 
 

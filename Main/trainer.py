@@ -3,6 +3,9 @@ import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from tensorflow.keras.callbacks import ReduceLROnPlateau, TensorBoard, ModelCheckpoint
+import sys
+sys.path.append('..')
 from Helpers.dataset_handlers import read_tfr, save_tfr, get_feature_map
 from Helpers.annotation_parsers import parse_voc_folder
 from Helpers.anchors import k_means, generate_anchors
@@ -12,7 +15,8 @@ from Main.models import V3Model
 from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
 from Helpers.utils import calculate_loss, timer, default_logger
-from Config.augmentation_presets import PRESET_1
+from Config.augmentation_options import preset_1
+from test import get_image
 
 
 class Trainer(V3Model):
@@ -61,15 +65,24 @@ class Trainer(V3Model):
             pandas DataFrame with adjusted labels.
         """
         labels_frame = None
+        check = 0
         if configuration.get('relative_labels'):
             labels_frame = adjust_non_voc_csv(
                 configuration['relative_labels'], self.image_folder,
                 self.image_width, self.image_height)
+            check += 1
         if configuration.get('from_xml'):
+            if check:
+                raise ValueError(f'Got more than one configuration')
             labels_frame = parse_voc_folder(os.path.join('..', 'Data', 'XML Labels'),
                                             os.path.join('..', 'Config', 'voc_conf.json'))
+            labels_frame.to_csv('../Data/saved_labels_from_xml.csv', index=False)
+            check += 1
         if configuration.get('adjusted_frame'):
+            if check:
+                raise ValueError(f'Got more than one configuration')
             labels_frame = pd.read_csv(configuration['adjusted_frame'])
+            check += 1
         return labels_frame
 
     def generate_new_anchors(self, new_anchors_conf):
@@ -184,7 +197,7 @@ class Trainer(V3Model):
 
     @timer(default_logger)
     def train(self, epochs, batch_size, learning_rate, new_anchors_conf=None,
-              new_dataset_conf=None):
+              new_dataset_conf=None, dataset_name=None):
         """
         Train on the dataset.
         Args:
@@ -193,6 +206,7 @@ class Trainer(V3Model):
             learning_rate: non-negative value.
             new_anchors_conf: A dictionary containing the following keys anchor generation configuration.
             new_dataset_conf: A dictionary containing the following keys dataset generation configuration.
+            dataset_name: Name of the dataset for model checkpoints.
 
         Returns:
             None
@@ -223,18 +237,36 @@ class Trainer(V3Model):
         loss = [calculate_loss(self.anchors[mask], self.classes, self.iou_threshold)
                 for mask in self.masks]
         self.training_model.compile(optimizer=optimizer, loss=loss)
+        checkpoint_name = f'{dataset_name or "trained"}_model.tf'
+        callbacks = [
+            ReduceLROnPlateau(verbose=1),
+            ModelCheckpoint(os.path.join('..', 'Models', checkpoint_name),
+                            verbose=1, save_weights_only=True),
+            TensorBoard(log_dir=os.path.join('..', 'Logs'))
+        ]
+        history = self.training_model.fit(training_dataset,
+                                          epochs=epochs,
+                                          callbacks=callbacks,
+                                          validation_data=valid_dataset)
+        default_logger.info('Training complete')
+        return history
 
 
 if __name__ == '__main__':
-    tr = Trainer((416, 416, 3),
-                 '../Config/beverly_hills.txt',
-                 1344, 756, '../Data/TFRecords/beverly_hills_train.tfrecord',
-                 '../Data/TFRecords/beverly_hills_test.tfrecord')
-    anc = {'anchor_no': 9, 'relative_labels': '../../../beverly_hills/bh_labels.csv'}
-    dt = {'relative_labels': '../../../beverly_hills/bh_labels.csv',
-          'dataset_name': 'beverly_hills',
-          'augmentation': True,
-          'test_size': 0.2,
-          'sequences': eval(PRESET_1)}
-    tr.train(50, 16, 1e-5, new_dataset_conf=dt)
+    anc = np.array([[58, 90], [695, 274], [262, 196], [62, 132], [152, 118],
+                    [185, 349], [50, 105], [531, 455], [248, 427]])
+    while True:
+        get_image()
+        tr = Trainer((416, 416, 3),
+                     '../Config/beverly_hills.txt',
+                     1344, 756,
+                     anchors=anc,
+                     train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
+                     valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord')
+        dt = {'relative_labels': '../Data/bh_labels.csv',
+              'dataset_name': 'beverly_hills',
+              'test_size': 0.2,
+              'sequences': preset_1,
+              'augmentation': False}
+        tr.train(2, 8, 1e-5, dataset_name='beverly_hills', new_dataset_conf=dt)
 

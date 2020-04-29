@@ -147,13 +147,15 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
     new_frame['Image Height'] = image_height
     new_frame['Relative Width'] = old_frame['bw']
     new_frame['Relative Height'] = old_frame['bh']
-    new_frame['Object ID'] = old_frame['Object Index']
+    new_frame['Object ID'] = old_frame['Object Index'] + 1
     for index, row in old_frame.iterrows():
         image, object_name, object_index, bx, by, bw, bh = row
         co = ratios_to_coordinates(bx, by, bw, bh, image_width, image_height)
         coordinates.append(co)
     (new_frame['X_min'], new_frame['Y_min'],
      new_frame['X_max'], new_frame['Y_max']) = np.array(coordinates).T
+    new_frame[['X_min', 'Y_min', 'X_max', 'Y_max']] = new_frame[
+        ['X_min', 'Y_min', 'X_max', 'Y_max']].astype('int64')
     print(f'Parsed labels:\n{new_frame["Object Name"].value_counts()}')
     classes = new_frame['Object Name'].drop_duplicates()
     default_logger.info(f'Adjustment from existing received {len(new_frame)} labels containing '

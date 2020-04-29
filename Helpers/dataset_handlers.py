@@ -125,7 +125,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     """
     Transform and save dataset into TFRecord format.
     Args:
-        data: pandas DataFrame with the dataset contents.
+        data: pandas DataFrame with relative labels.
         output_folder: Path to folder where TFRecord(s) will be saved.
         dataset_name: str name of the dataset.
         test_size: relative test subset size.
@@ -136,6 +136,8 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     """
     data['Object Name'] = data['Object Name'].apply(lambda x: x.encode('utf-8'))
     data['Object ID'] = data['Object ID'].astype(int)
+    data[data.dtypes[data.dtypes == 'int64'].index] = (
+        data[data.dtypes[data.dtypes == 'int64'].index].apply(abs))
     groups = data.groupby('Image Path').apply(np.array)
     if test_size:
         assert 0 < test_size < 1, f'test_size must be 0 < test_size < 1 and {test_size} is given'

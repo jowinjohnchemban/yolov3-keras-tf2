@@ -253,7 +253,7 @@ class DataAugment:
         current_sequence = 1
         for augmentation_sequence in self.augmentation_sequences:
             new_image_name = (f'aug-{self.session_id}-sequence-{current_sequence}'
-                              f'{os.path.basename(image_path)}')
+                              f'-{os.path.basename(image_path)}')
             new_image_path = os.path.join(self.image_folder, new_image_name)
             bbs, frame_before = self.get_bounding_boxes_over_image(image_path)
             augmented_image, augmented_boxes = augmentation_sequence(
@@ -292,17 +292,17 @@ class DataAugment:
         augmentation_frame = pd.DataFrame(self.augmentation_data,
                                           columns=self.mapping.columns)
         saving_path = os.path.join(self.image_folder, f'augmented_data_plus_original.csv')
-        pd.concat([self.mapping, augmentation_frame]).to_csv(saving_path, index=False)
+        combined = pd.concat([self.mapping, augmentation_frame])
+        for item in ['bx', 'by', 'bw', 'bh']:
+            combined = combined.drop(combined[combined[item] > 1].index)
+        combined.to_csv(saving_path, index=False)
         default_logger.info(f'Saved old + augmented labels to {saving_path}')
-        adjusted_mapping = adjust_non_voc_csv(self.labels_file, self.image_folder,
-                                              self.image_width, self.image_height)
-        adjusted_augmentation = adjust_non_voc_csv(saving_path, self.image_folder,
-                                                   self.image_width, self.image_height)
-        full_frame = pd.concat([adjusted_mapping, adjusted_augmentation])
+        adjusted_combined = adjust_non_voc_csv(saving_path, self.image_folder,
+                                               self.image_width, self.image_height)
         adjusted_saving_path = saving_path.replace('augmented', 'adjusted_aug')
-        full_frame.to_csv(adjusted_saving_path, index=False)
+        adjusted_combined.to_csv(adjusted_saving_path, index=False)
         default_logger.info(f'Saved old + augmented (adjusted) labels to {adjusted_saving_path}')
-        return full_frame
+        return adjusted_combined
 
     @staticmethod
     def display_windows(out, move_after):
@@ -398,7 +398,7 @@ if __name__ == '__main__':
                       augmentations,
                       converted_coordinates_file='scratch/label_coordinates.csv',
                       image_folder='../../../beverly_hills/photos')
-    for it in augmentations:
-        print(it)
-        aug.preview_augmentations(2, it, True)
+    # for it in augmentations:
+    #     print(it)
+    aug.preview_augmentations(2, 'meta', True)
 
