@@ -16,7 +16,6 @@ from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
 from Helpers.utils import calculate_loss, timer, default_logger
 from Config.augmentation_options import preset_1
-from test import get_image
 
 
 class Trainer(V3Model):
@@ -244,6 +243,7 @@ class Trainer(V3Model):
                             verbose=1, save_weights_only=True),
             TensorBoard(log_dir=os.path.join('..', 'Logs'))
         ]
+        exit()
         history = self.training_model.fit(training_dataset,
                                           epochs=epochs,
                                           callbacks=callbacks,
@@ -255,18 +255,16 @@ class Trainer(V3Model):
 if __name__ == '__main__':
     anc = np.array([[58, 90], [695, 274], [262, 196], [62, 132], [152, 118],
                     [185, 349], [50, 105], [531, 455], [248, 427]])
-    while True:
-        get_image()
-        tr = Trainer((416, 416, 3),
-                     '../Config/beverly_hills.txt',
-                     1344, 756,
-                     anchors=anc,
-                     train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
-                     valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord')
-        dt = {'relative_labels': '../Data/bh_labels.csv',
-              'dataset_name': 'beverly_hills',
-              'test_size': 0.2,
-              'sequences': preset_1,
-              'augmentation': False}
-        tr.train(2, 8, 1e-5, dataset_name='beverly_hills', new_dataset_conf=dt)
+    tr = Trainer((416, 416, 3),
+                 '../Config/beverly_hills.txt',
+                 1344, 756,
+                 anchors=anc,
+                 train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
+                 valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord')
+    dt = {'relative_labels': '../Data/bh_labels.csv',
+          'dataset_name': 'beverly_hills',
+          'test_size': 0.2,
+          'sequences': preset_1,
+          'augmentation': True}
+    tr.train(2, 8, 1e-5, dataset_name='beverly_hills', new_dataset_conf=dt)
 

@@ -76,18 +76,19 @@ class DataAugment:
         Returns:
             The list of augmentation sequences that will be applied over images.
         """
-        sequence_dicts = [[self.augmentation_map[item['sequence_group']][item['no'] - 1]
-                           for item in group]
-                          for group in sequences]
-        total_target = (len(sequence_dicts) * len(self.image_paths)) + len(self.image_paths)
+        total_target = (len(sequences) * len(self.image_paths)) + len(self.image_paths)
         default_logger.info(f'Total images(old + augmented): {total_target}')
-        augments = [[item['augmentation']
-                     for item in group]
-                    for group in sequence_dicts]
-        self.augmentation_sequences = [
-            iaa.Sequential([iaa.SomeOf((0, 5), [eval(item)
-                            for item in group])], random_order=True)
-            for group in augments]
+        for group in sequences:
+            some_ofs = [self.augmentation_map[item['sequence_group']][item['no'] - 1]
+                        for item in group[0]]
+            one_ofs = [self.augmentation_map[item['sequence_group']][item['no'] - 1]
+                       for item in group[1]]
+            some_of_aug = [item['augmentation'] for item in some_ofs]
+            one_of_aug = [item['augmentation'] for item in one_ofs]
+            some_of_seq = iaa.SomeOf((0, 5), [eval(item) for item in some_of_aug])
+            one_of_seq = iaa.OneOf([eval(item) for item in one_of_aug])
+            self.augmentation_sequences.append(iaa.Sequential(
+                [some_of_seq, one_of_seq], random_order=True))
         return self.augmentation_sequences
 
     @staticmethod
@@ -398,7 +399,6 @@ if __name__ == '__main__':
                       augmentations,
                       converted_coordinates_file='scratch/label_coordinates.csv',
                       image_folder='../../../beverly_hills/photos')
-    # for it in augmentations:
-    #     print(it)
-    aug.preview_augmentations(2, 'meta', True)
+    for it in augmentations:
+        aug.preview_augmentations(2, it, True)
 
