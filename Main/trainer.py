@@ -266,5 +266,5 @@ if __name__ == '__main__':
           'test_size': 0.2,
           'sequences': preset_1,
           'augmentation': True}
-    tr.train(2, 8, 1e-5, dataset_name='beverly_hills', new_dataset_conf=dt)
+    tr.train(2, 8, 1e-6, dataset_name='beverly_hills', new_dataset_conf=dt)
 
