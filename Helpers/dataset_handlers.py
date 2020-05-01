@@ -104,7 +104,7 @@ def write_tf_record(output_path, groups, data, trainer=None):
         if 'test' in output_path:
             trainer.valid_tf_record = output_path
     with tf.io.TFRecordWriter(output_path) as r_writer:
-        for current_image, (image_path, objects) in enumerate(groups.iteritems(), 1):
+        for current_image, (image_path, objects) in enumerate(groups, 1):
             print(f'\rBuilding example: {current_image}/{len(groups)} ... '
                   f'{os.path.split(image_path)[-1]} '
                   f'{round(100 * (current_image / len(groups)))}% completed', end='')
@@ -141,7 +141,8 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     data['Object ID'] = data['Object ID'].astype(int)
     data[data.dtypes[data.dtypes == 'int64'].index] = (
         data[data.dtypes[data.dtypes == 'int64'].index].apply(abs))
-    groups = data.groupby('Image Path').apply(np.array)
+    groups = np.array(data.groupby('Image Path'))
+    np.random.shuffle(groups)
     if test_size:
         assert 0 < test_size < 1, f'test_size must be 0 < test_size < 1 and {test_size} is given'
         separation_index = int((1 - test_size) * len(groups))
@@ -185,9 +186,9 @@ def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
 
 
 if __name__ == '__main__':
-    from Helpers.annotation_parsers import parse_voc_folder
-    fr = parse_voc_folder(folder_path='../../../beverly_hills/labels',
-                          voc_conf='../Config/voc_conf.json')
-    save_tfr(fr, '../../', 'beverly_hills', 0.2)
+    from Helpers.annotation_parsers import adjust_non_voc_csv
+    adj = adjust_non_voc_csv('../Data/bh_labels.csv', '../../../beverly_hills/photos',
+                             1344, 756)
+    save_tfr(adj, '../../', 'bhills', 0.2)
     # read_tfr('../../beverly_hills_train.tfrecord', '../Config/beverly_hills.txt', get_feature_map(),
     #          100)

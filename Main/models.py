@@ -218,8 +218,7 @@ class V3Model:
         return self.training_model, self.inference_model
 
     @timer(default_logger)
-    def load_dark_net_weights(self, weights_file):
-        assert self.classes == 80, f'DarkNet model must have 80 classes, not {self.classes}'
+    def load_weights(self, weights_file):
         if weights_file.endswith('.tf'):
             self.training_model.load_weights(weights_file)
             return

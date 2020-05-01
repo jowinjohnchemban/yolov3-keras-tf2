@@ -103,6 +103,8 @@ def visualization_wrapper(to_visualize):
     Returns:
         to_visualize
     """
+    plt.switch_backend('Qt5Agg')
+
     def visualized(*args, **kwargs):
         result = to_visualize(*args, **kwargs)
         if to_visualize.__name__ in ['parse_voc_folder', 'adjust_non_voc_csv']:
