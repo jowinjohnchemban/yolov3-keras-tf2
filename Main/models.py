@@ -100,10 +100,10 @@ class V3Model:
 
     def get_nms(self, outputs):
         boxes, conf, type_ = [], [], []
-        for o in outputs:
-            boxes.append(tf.reshape(o[0], (tf.shape(o[0])[0], -1, tf.shape(o[0])[-1])))
-            conf.append(tf.reshape(o[1], (tf.shape(o[1])[0], -1, tf.shape(o[1])[-1])))
-            type_.append(tf.reshape(o[2], (tf.shape(o[2])[0], -1, tf.shape(o[2])[-1])))
+        for output in outputs:
+            boxes.append(tf.reshape(output[0], (tf.shape(output[0])[0], -1, tf.shape(output[0])[-1])))
+            conf.append(tf.reshape(output[1], (tf.shape(output[1])[0], -1, tf.shape(output[1])[-1])))
+            type_.append(tf.reshape(output[2], (tf.shape(output[2])[0], -1, tf.shape(output[2])[-1])))
         bbox = tf.concat(boxes, axis=1)
         confidence = tf.concat(conf, axis=1)
         class_probabilities = tf.concat(type_, axis=1)
@@ -221,6 +221,7 @@ class V3Model:
     def load_weights(self, weights_file):
         if weights_file.endswith('.tf'):
             self.training_model.load_weights(weights_file)
+            default_logger.info(f'Loaded weights: {weights_file} ... success')
             return
         with open(weights_file, 'rb') as weights_data:
             print(f'Loading pre-trained weights ...')
@@ -245,8 +246,8 @@ class V3Model:
                 convolution_bias = np.fromfile(
                     weights_data, dtype=np.float32, count=filters) if b_norm_layer is None else None
                 bn_weights = np.fromfile(
-                    weights_data, dtype=np.float32, count=4 * filters).reshape((4, filters))[[1, 0, 2, 3]] if(
-                    b_norm_layer is not None) else None
+                    weights_data, dtype=np.float32, count=4 * filters).reshape((4, filters))[[1, 0, 2, 3]] if (
+                        b_norm_layer is not None) else None
                 convolution_shape = (filters, input_dimension, kernel_size, kernel_size)
                 convolution_weights = np.fromfile(
                     weights_data, dtype=np.float32, count=np.product(convolution_shape)).reshape(
@@ -260,14 +261,13 @@ class V3Model:
                     layer.set_weights([convolution_weights])
                     b_norm_layer.set_weights(bn_weights)
             assert len(weights_data.read()) == 0, 'failed to read all data'
+        default_logger.info(f'Loaded weights: {weights_file} ... success')
         print()
-        print(f'Loading pre-trained weights ... done')
-        default_logger.info('Loaded DarkNet weights')
 
 
 if __name__ == '__main__':
     mod = V3Model((416, 416, 3), 80)
     tr, inf = mod.create_models()
-    mod.load_dark_net_weights('../../yolov3.weights')
+    mod.load_weights('../../yolov3.weights')
     tr.summary()
     inf.summary()

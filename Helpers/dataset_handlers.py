@@ -59,7 +59,8 @@ def create_example(separate_data, key, image_data):
     return tf.train.Example(features=tf.train.Features(feature=features))
 
 
-def read_example(example, feature_map, class_table, max_boxes, new_size=None):
+def read_example(example, feature_map, class_table, max_boxes, new_size=None,
+                 get_features=False):
     """
     Read single a single example from a TFRecord file.
     Args:
@@ -68,6 +69,7 @@ def read_example(example, feature_map, class_table, max_boxes, new_size=None):
         class_table: StaticHashTable object.
         max_boxes: Maximum number of boxes per image
         new_size: w, h new image size
+        get_features: If True, features will be returned.
 
     Returns:
         x_train, y_train
@@ -82,6 +84,8 @@ def read_example(example, feature_map, class_table, max_boxes, new_size=None):
                         for feature in ['x_min', 'y_min', 'x_max', 'y_max']] + [label], 1)
     padding = [[0, max_boxes - tf.shape(y_train)[0]], [0, 0]]
     y_train = tf.pad(y_train, padding)
+    if get_features:
+        return x_train, y_train, features
     return x_train, y_train
 
 
@@ -161,7 +165,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
 
 
 def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
-             classes_delimiter='\n', new_size=None):
+             classes_delimiter='\n', new_size=None, get_features=False):
     """
     Read and load dataset from TFRecord file.
     Args:
@@ -171,6 +175,7 @@ def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
         max_boxes: Maximum number of boxes per image.
         classes_delimiter: delimiter in classes_file.
         new_size: w, h new image size
+        get_features: If True, features will be returned.
 
     Returns:
         MapDataset object.
@@ -182,7 +187,7 @@ def read_tfr(tf_record_file, classes_file, feature_map, max_boxes,
     dataset = files.flat_map(tf.data.TFRecordDataset)
     default_logger.info(f'Read TFRecord: {tf_record_file}')
     return dataset.map(
-        lambda x: read_example(x, feature_map, class_table, max_boxes, new_size))
+        lambda x: read_example(x, feature_map, class_table, max_boxes, new_size, get_features))
 
 
 if __name__ == '__main__':

@@ -1,9 +1,12 @@
+from tensorflow.keras.callbacks import Callback
+from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import imagesize
 import cv2
 import os
+import sys
 
 
 def save_fig(title, save_figures):
@@ -32,9 +35,9 @@ def visualize_box_relative_sizes(frame, save_result=False):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
-    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')) or (
-            frame is None):
-        return
+    # if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')) or (
+    #         frame is None):
+    #     return
     sns.scatterplot(x=frame["Relative Width"], y=frame["Relative Height"], hue=frame["Object Name"],
                     palette='gist_rainbow')
     plt.title(title)
@@ -103,7 +106,8 @@ def visualization_wrapper(to_visualize):
     Returns:
         to_visualize
     """
-    plt.switch_backend('Qt5Agg')
+    if sys.platform == 'darwin':
+        plt.switch_backend('Qt5Agg')
 
     def visualized(*args, **kwargs):
         result = to_visualize(*args, **kwargs)
@@ -120,6 +124,9 @@ def visualization_wrapper(to_visualize):
             plt.show()
         return result
     return visualized
+
+
+
 
 
 

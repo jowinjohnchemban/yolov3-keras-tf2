@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tensorflow.keras.callbacks import ReduceLROnPlateau, TensorBoard, ModelCheckpoint
-import sys
-sys.path.append('..')
 from Helpers.dataset_handlers import read_tfr, save_tfr, get_feature_map
 from Helpers.annotation_parsers import parse_voc_folder
 from Helpers.anchors import k_means, generate_anchors
@@ -196,7 +194,7 @@ class Trainer(V3Model):
 
     @timer(default_logger)
     def train(self, epochs, batch_size, learning_rate, new_anchors_conf=None,
-              new_dataset_conf=None, dataset_name=None):
+              new_dataset_conf=None, dataset_name=None, weights=None):
         """
         Train on the dataset.
         Args:
@@ -206,6 +204,7 @@ class Trainer(V3Model):
             new_anchors_conf: A dictionary containing the following keys anchor generation configuration.
             new_dataset_conf: A dictionary containing the following keys dataset generation configuration.
             dataset_name: Name of the dataset for model checkpoints.
+            weights: .tf or .weights file
 
         Returns:
             None
@@ -219,6 +218,8 @@ class Trainer(V3Model):
             print(f'Generating new anchors ...')
             self.generate_new_anchors(new_anchors_conf)
         self.create_models()
+        if weights:
+            self.load_weights(weights)
         if new_dataset_conf:
             print(f'Generating new dataset ...')
             test_size = new_dataset_conf.get('test_size')
@@ -236,14 +237,13 @@ class Trainer(V3Model):
         loss = [calculate_loss(self.anchors[mask], self.classes, self.iou_threshold)
                 for mask in self.masks]
         self.training_model.compile(optimizer=optimizer, loss=loss)
-        checkpoint_name = f'{dataset_name or "trained"}_model.tf'
+        checkpoint_name = f'{dataset_name or "trained"}_model2.tf'
         callbacks = [
             ReduceLROnPlateau(verbose=1),
-            ModelCheckpoint(os.path.join('..', 'Models', checkpoint_name),
+            ModelCheckpoint(os.path.join('/', 'content', 'drive', 'My Drive', checkpoint_name),
                             verbose=1, save_weights_only=True),
-            TensorBoard(log_dir=os.path.join('..', 'Logs'))
+            TensorBoard(log_dir=os.path.join('..', 'Logs')),
         ]
-        exit()
         history = self.training_model.fit(training_dataset,
                                           epochs=epochs,
                                           callbacks=callbacks,
@@ -259,12 +259,13 @@ if __name__ == '__main__':
                  '../Config/beverly_hills.txt',
                  1344, 756,
                  anchors=anc,
-                 train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
-                 valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord')
+                 train_tf_record='/content/drive/My Drive/beverly_hills_train.tfrecord',
+                 valid_tf_record='/content/drive/My Drive/beverly_hills_test.tfrecord')
     dt = {'relative_labels': '../Data/bh_labels.csv',
           'dataset_name': 'beverly_hills',
           'test_size': 0.2,
           'sequences': preset_1,
           'augmentation': True}
-    tr.train(2, 8, 1e-6, dataset_name='beverly_hills', new_dataset_conf=dt)
+    tr.train(150, 8, 1e-3,
+             dataset_name='beverly_hills')
 
