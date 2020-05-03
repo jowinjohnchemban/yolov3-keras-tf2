@@ -5,6 +5,7 @@ from logging import handlers
 from time import perf_counter
 import os
 import numpy as np
+import pandas as pd
 
 
 def get_logger():
@@ -202,17 +203,18 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
     return yolo_loss
 
 
-def get_detection_data(image, outputs, class_names):
-    data = []
-    boxes, scores, classes, nums = [item[0] for item in outputs]
-    wh = np.flip(image.shape[0: 2])
-    for i in range(nums):
-        x1, y1 = tuple((np.array(boxes[i][0:2]) * wh).astype(np.int32))
-        x2, y2 = tuple((np.array(boxes[i][2:4]) * wh).astype(np.int32))
-        object_name = class_names[int(classes[i])]
-        score = scores[i]
-        line = [object_name, float(score), x1, y1, x2, y2]
-        data.append(line)
+def get_detection_data(image, image_name, outputs, class_names):
+    nums = outputs[-1]
+    boxes, scores, classes = [item[0][:int(nums)].numpy() for item in outputs[:-1]]
+    w, h = np.flip(image.shape[0: 2])
+    data = pd.DataFrame(boxes, columns=['x1', 'y1', 'x2', 'y2'])
+    data[['x1', 'x2']] = (data[['x1', 'x2']] * w).astype('int64')
+    data[['y1', 'y2']] = (data[['y1', 'y2']] * h).astype('int64')
+    data['object_name'] = np.array(class_names)[classes.astype('int64')]
+    data['image'] = image_name
+    data['score'] = scores
+    data['image_width'] = w
+    data['image_height'] = h
     return data
 
 
