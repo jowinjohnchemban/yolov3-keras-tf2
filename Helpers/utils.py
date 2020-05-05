@@ -207,7 +207,6 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
 
 
 def add_xml_path(xml_file, path):
-    print(f'Current file: {xml_file}')
     tree = ElementTree.parse(xml_file)
     top = tree.getroot()
     folder_tag = tree.find('folder')

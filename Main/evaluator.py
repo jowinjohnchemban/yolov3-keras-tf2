@@ -76,53 +76,40 @@ class Evaluator(V3Model):
         return train_predictions, valid_predictions
 
     @staticmethod
-    def get_iou(box_true, box_predicted):
-        x1, y1, x2, y2 = box_true
-        x1p, y1p, x2p, y2p = box_predicted
-        if not all([x2 > x1, y2 > y1, x2p > x1p, y2p > y1p]):
-            return 0
-        far_x = np.min([x2, x2p])
-        near_x = np.max([x1, x1p])
-        far_y = np.min([y2, y2p])
-        near_y = np.max([y1, y1p])
-        inter_area = (far_x - near_x + 1) * (far_y - near_y + 1)
-        true_box_area = (x2 - x1 + 1) * (y2 - y1 + 1)
-        pred_box_area = (x2p - x1p + 1) * (y2p - y1p + 1)
-        iou = inter_area / (true_box_area + pred_box_area - inter_area)
-        return iou
+    def get_area(frame, columns):
+        x1, y1, x2, y2 = [frame[column] for column in columns]
+        return (x2 - x1) * (y2 - y1)
 
     def calculate_overlaps(self, detections, actual):
-        calculations = []
-        detection_groups = detections.groupby('image')
-        actual_groups = actual.groupby('Image Path')
-        for item1, item2 in zip(actual_groups, detection_groups):
-            for detected_index, detected_row in item2[1].iterrows():
-                detected_coordinates = detected_row.values[2: 6]
-                detected_overlaps = []
-                coords = []
-                for actual_index, actual_row in item1[1].iterrows():
-                    actual_coordinates = actual_row.values[4: 8]
-                    detected_overlaps.append((
-                        self.get_iou(actual_coordinates, detected_coordinates)))
-                    coords.append(actual_coordinates)
-                detected_row['max_iou'] = max(detected_overlaps)
-                x1, y1, x2, y2 = coords[int(np.argmax(detected_overlaps))]
-                for match, value in zip([f'{item}_match'
-                                         for item in ['x1', 'y1', 'x2', 'y2']],
-                                        [x1, y1, x2, y2]):
-                    detected_row[match] = value
-                calculations.append(detected_row)
-        return pd.DataFrame(calculations)
+        actual = actual.rename(columns={'Image Path': 'image', 'Object Name': 'object_name'})
+        total_frame = actual.merge(detections, on=['image', 'object_name'])
+        total_frame['x_max_common'] = total_frame[['X_max', 'x2']].min(1)
+        total_frame['x_min_common'] = total_frame[['X_min', 'x1']].max(1)
+        total_frame['y_max_common'] = total_frame[['Y_max', 'y2']].min(1)
+        total_frame['y_min_common'] = total_frame[['Y_min', 'y1']].max(1)
+        true_intersect = (total_frame['x_max_common'] > total_frame['x_min_common']) & (
+                total_frame['y_max_common'] > total_frame['y_min_common'])
+        total_frame = total_frame[true_intersect]
+        actual_areas = self.get_area(total_frame, ['X_min', 'Y_min', 'X_max', 'Y_max'])
+        predicted_areas = self.get_area(total_frame, ['x1', 'y1', 'x2', 'y2'])
+        intersect_areas = self.get_area(total_frame, [
+            'x_min_common', 'y_min_common', 'x_max_common', 'y_max_common'])
+        iou_areas = intersect_areas / (actual_areas + predicted_areas - intersect_areas)
+        total_frame['iou'] = iou_areas
+        return total_frame
 
     def get_counts(self, prediction_file, actual_file):
+        counts = {}
         detection_data = pd.read_csv(prediction_file)
         width, height = detection_data.iloc[0][['image_width', 'image_height']]
         actual_data = adjust_non_voc_csv(actual_file, '', width, height)
         for object_name in self.class_names:
             detections = detection_data[detection_data['object_name'] == object_name]
             actual = actual_data[actual_data['Object Name'] == object_name]
-            calculated = self.calculate_overlaps(detections, actual)
-            print(calculated)
+            counts[object_name] = self.calculate_overlaps(detections, actual)
+        for item in counts.values():
+            print(item)
+
 
 
 if __name__ == '__main__':
