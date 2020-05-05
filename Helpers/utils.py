@@ -6,6 +6,9 @@ from time import perf_counter
 import os
 import numpy as np
 import pandas as pd
+from xml.etree.ElementTree import SubElement
+from xml.etree import ElementTree
+from lxml import etree
 
 
 def get_logger():
@@ -203,6 +206,24 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
     return yolo_loss
 
 
+def add_xml_path(xml_file, path):
+    print(f'Current file: {xml_file}')
+    tree = ElementTree.parse(xml_file)
+    top = tree.getroot()
+    folder_tag = tree.find('folder')
+    folder_tag.text = path
+    file_name_tag = tree.find('filename')
+    path_tag = SubElement(top, 'path')
+    path_tag.text = os.path.join(folder_tag.text, file_name_tag.text)
+    rough_string = ElementTree.tostring(top, 'utf8')
+    root = etree.fromstring(rough_string)
+    pretty = etree.tostring(
+        root, pretty_print=True, encoding='utf-8').replace("  ".encode(), "\t".encode())
+    os.remove(xml_file)
+    with open(xml_file, 'wb') as output:
+        output.write(pretty)
+
+
 def get_detection_data(image, image_name, outputs, class_names):
     nums = outputs[-1]
     boxes, scores, classes = [item[0][:int(nums)].numpy() for item in outputs[:-1]]
@@ -215,6 +236,9 @@ def get_detection_data(image, image_name, outputs, class_names):
     data['score'] = scores
     data['image_width'] = w
     data['image_height'] = h
+    data['max_iou'] = 0
+    data = data[['image', 'object_name', 'x1', 'y1', 'x2', 'y2', 'score',
+                 'image_width', 'image_height', 'max_iou']]
     return data
 
 
