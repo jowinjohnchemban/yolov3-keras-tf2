@@ -53,15 +53,21 @@ def k_means(relative_sizes, k, distance_func=np.median, frame=None):
     iteration = 0
     while True:
         distances = 1 - iou(relative_sizes, centroids, k)
-        print(f'Iteration: {iteration} Loss: {np.sum(np.abs(distances - old_distances))}')
+        print(
+            f"Iteration: {iteration} Loss: {np.sum(np.abs(distances - old_distances))}"
+        )
         old_distances = distances.copy()
         iteration += 1
         current_nearest = np.argmin(distances, axis=1)
         if (last_nearest == current_nearest).all():
-            default_logger.info(f'Generated {len(centroids)} anchors in {iteration} iterations')
+            default_logger.info(
+                f"Generated {len(centroids)} anchors in {iteration} iterations"
+            )
             return centroids, frame
         for anchor in range(k):
-            centroids[anchor] = distance_func(relative_sizes[current_nearest == anchor], axis=0)
+            centroids[anchor] = distance_func(
+                relative_sizes[current_nearest == anchor], axis=0
+            )
         last_nearest = current_nearest
 
 
@@ -79,10 +85,15 @@ def generate_anchors(width, height, centroids):
     return (centroids * np.array([width, height])).astype(int)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from Helpers.annotation_parsers import parse_voc_folder
-    fr = parse_voc_folder('../../../beverly_hills/labels/', '../Config/voc_conf.json')
-    relative_dims = np.array(list(zip(fr['Relative Width'], fr['Relative Height'])))
+
+    fr = parse_voc_folder(
+        "../../../beverly_hills/labels/", "../Config/voc_conf.json"
+    )
+    relative_dims = np.array(
+        list(zip(fr["Relative Width"], fr["Relative Height"]))
+    )
     kk = 9
     c, f = k_means(relative_dims, kk, frame=fr)
     print([list(item) for item in generate_anchors(1344, 756, c)])

@@ -1,4 +1,3 @@
-
 augmentations = {
     "meta": [
         {
@@ -41,7 +40,10 @@ augmentations = {
             "augmentation": """iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=2.0), iaa.Sequential(
             [iaa.Affine(rotate=45), iaa.Sharpen(alpha=1.0)]))""",
         },
-        {"no": 9, "augmentation": """iaa.WithChannels(0, iaa.Add((10, 100)))"""},
+        {
+            "no": 9,
+            "augmentation": """iaa.WithChannels(0, iaa.Add((10, 100)))""",
+        },
         {
             "no": 10,
             "augmentation": """iaa.WithChannels(0, iaa.Affine(rotate=(0, 45)))""",
@@ -57,7 +59,10 @@ augmentations = {
             "augmentation": """iaa.Sequential([iaa.AssertShape((None, (32, 64), 32, [1, 3])), iaa.Fliplr(0.5)])""",
         },
         {"no": 15, "augmentation": """iaa.ChannelShuffle(0.35)"""},
-        {"no": 16, "augmentation": """iaa.ChannelShuffle(0.35, channels=[0, 1])"""},
+        {
+            "no": 16,
+            "augmentation": """iaa.ChannelShuffle(0.35, channels=[0, 1])""",
+        },
         {
             "no": 17,
             "augmentation": """iaa.Sequential([iaa.Affine(translate_px={"x": (-100, 100)}),
@@ -73,18 +78,30 @@ augmentations = {
         {"no": 1, "augmentation": """iaa.Add((-40, 40))"""},
         {"no": 2, "augmentation": """iaa.Add((-40, 40), per_channel=0.5)"""},
         {"no": 3, "augmentation": """iaa.AddElementwise((-40, 40))"""},
-        {"no": 4, "augmentation": """iaa.AddElementwise((-40, 40), per_channel=0.5)"""},
+        {
+            "no": 4,
+            "augmentation": """iaa.AddElementwise((-40, 40), per_channel=0.5)""",
+        },
         {
             "no": 5,
             "augmentation": """iaa.AdditiveGaussianNoise(scale=(0, 0.2 * 255))""",
         },
-        {"no": 6, "augmentation": """iaa.AdditiveGaussianNoise(scale=0.2 * 255)"""},
+        {
+            "no": 6,
+            "augmentation": """iaa.AdditiveGaussianNoise(scale=0.2 * 255)""",
+        },
         {
             "no": 7,
             "augmentation": """iaa.AdditiveGaussianNoise(scale=0.2 * 255, per_channel=True)""",
         },
-        {"no": 8, "augmentation": """iaa.AdditiveLaplaceNoise(scale=(0, 0.2 * 255))"""},
-        {"no": 9, "augmentation": """iaa.AdditiveLaplaceNoise(scale=0.2 * 255)"""},
+        {
+            "no": 8,
+            "augmentation": """iaa.AdditiveLaplaceNoise(scale=(0, 0.2 * 255))""",
+        },
+        {
+            "no": 9,
+            "augmentation": """iaa.AdditiveLaplaceNoise(scale=0.2 * 255)""",
+        },
         {
             "no": 10,
             "augmentation": """iaa.AdditiveLaplaceNoise(scale=0.2 * 255, per_channel=True)""",
@@ -92,7 +109,10 @@ augmentations = {
         {"no": 11, "augmentation": """iaa.AdditivePoissonNoise(40)"""},
         {"no": 12, "augmentation": """iaa.AdditivePoissonNoise(12)"""},
         {"no": 13, "augmentation": """iaa.Multiply((0.5, 1.5))"""},
-        {"no": 14, "augmentation": """iaa.Multiply((0.5, 1.5), per_channel=0.5)"""},
+        {
+            "no": 14,
+            "augmentation": """iaa.Multiply((0.5, 1.5), per_channel=0.5)""",
+        },
         {"no": 15, "augmentation": """iaa.MultiplyElementwise((0.5, 1.5))"""},
         {
             "no": 16,
@@ -103,7 +123,10 @@ augmentations = {
             "no": 18,
             "augmentation": """iaa.Cutout(nb_iterations=(1, 5), size=0.2, squared=False)""",
         },
-        {"no": 19, "augmentation": """iaa.Cutout(fill_mode="constant", cval=255)"""},
+        {
+            "no": 19,
+            "augmentation": """iaa.Cutout(fill_mode="constant", cval=255)""",
+        },
         {
             "no": 20,
             "augmentation": """iaa.Cutout(fill_mode="constant", cval=(0, 255), fill_per_channel=0.5)""",
@@ -113,8 +136,14 @@ augmentations = {
             "augmentation": """iaa.Cutout(fill_mode="gaussian", fill_per_channel=True)""",
         },
         {"no": 22, "augmentation": """iaa.Dropout(p=(0, 0.2))"""},
-        {"no": 23, "augmentation": """iaa.Dropout(p=(0, 0.2), per_channel=0.5)"""},
-        {"no": 24, "augmentation": """iaa.CoarseDropout(0.02, size_percent=0.5)"""},
+        {
+            "no": 23,
+            "augmentation": """iaa.Dropout(p=(0, 0.2), per_channel=0.5)""",
+        },
+        {
+            "no": 24,
+            "augmentation": """iaa.CoarseDropout(0.02, size_percent=0.5)""",
+        },
         {
             "no": 25,
             "augmentation": """iaa.CoarseDropout((0.0, 0.05), size_percent=(0.02, 0.25))""",
@@ -124,7 +153,10 @@ augmentations = {
             "augmentation": """iaa.CoarseDropout(0.02, size_percent=0.15, per_channel=0.5)""",
         },
         {"no": 27, "augmentation": """iaa.Dropout2d(p=0.5)"""},
-        {"no": 28, "augmentation": """iaa.Dropout2d(p=0.5, nb_keep_channels=0)"""},
+        {
+            "no": 28,
+            "augmentation": """iaa.Dropout2d(p=0.5, nb_keep_channels=0)""",
+        },
         {"no": 29, "augmentation": """iaa.ReplaceElementwise(0.1, [0, 255])"""},
         {
             "no": 30,
@@ -140,7 +172,10 @@ augmentations = {
                              iap.Normal(128, 0.4 * 128), per_channel=0.5)""",
         },
         {"no": 33, "augmentation": """iaa.SaltAndPepper(0.1)"""},
-        {"no": 34, "augmentation": """iaa.SaltAndPepper(0.1, per_channel=True)"""},
+        {
+            "no": 34,
+            "augmentation": """iaa.SaltAndPepper(0.1, per_channel=True)""",
+        },
         {
             "no": 35,
             "augmentation": """iaa.CoarseSaltAndPepper(0.05, size_percent=(0.01, 0.1))""",
@@ -152,8 +187,14 @@ augmentations = {
         {"no": 37, "augmentation": """iaa.Pepper(0.1)"""},
         {"no": 38, "augmentation": """iaa.Invert(0.5)"""},
         {"no": 39, "augmentation": """iaa.Invert(0.25, per_channel=0.5)"""},
-        {"no": 40, "augmentation": """iaa.Solarize(0.5, threshold=(32, 128))"""},
-        {"no": 41, "augmentation": """iaa.JpegCompression(compression=(70, 99))"""},
+        {
+            "no": 40,
+            "augmentation": """iaa.Solarize(0.5, threshold=(32, 128))""",
+        },
+        {
+            "no": 41,
+            "augmentation": """iaa.JpegCompression(compression=(70, 99))""",
+        },
     ],
     "artistic": [
         {"no": 1, "augmentation": """iaa.Cartoon()"""},
@@ -231,7 +272,10 @@ augmentations = {
             "no": 15,
             "augmentation": """iaa.BlendAlphaFrequencyNoise(sigmoid_thresh=iap.Normal(10.0, 5.0))""",
         },
-        {"no": 16, "augmentation": """iaa.BlendAlphaSomeColors(iaa.Grayscale(1.0))"""},
+        {
+            "no": 16,
+            "augmentation": """iaa.BlendAlphaSomeColors(iaa.Grayscale(1.0))""",
+        },
         {
             "no": 17,
             "augmentation": """iaa.BlendAlphaSomeColors(iaa.TotalDropout(1.0))""",
@@ -340,7 +384,10 @@ augmentations = {
             to_colorspace="HSV", from_colorspace="RGB", children=iaa.WithChannels(
                 0, iaa.Add((0, 50))))""",
         },
-        {"no": 2, "augmentation": """iaa.WithBrightnessChannels(iaa.Add((-50, 50)))"""},
+        {
+            "no": 2,
+            "augmentation": """iaa.WithBrightnessChannels(iaa.Add((-50, 50)))""",
+        },
         {
             "no": 3,
             "augmentation": """iaa.WithBrightnessChannels(iaa.Add((-50, 50)), to_colorspace=[
@@ -399,10 +446,19 @@ augmentations = {
             0, iaa.Add((50, 100))), iaa.ChangeColorspace(from_colorspace="HSV", to_colorspace="RGB")])""",
         },
         {"no": 22, "augmentation": """iaa.Grayscale(alpha=(0.0, 1.0))"""},
-        {"no": 23, "augmentation": """iaa.ChangeColorTemperature((1100, 10000))"""},
+        {
+            "no": 23,
+            "augmentation": """iaa.ChangeColorTemperature((1100, 10000))""",
+        },
         {"no": 24, "augmentation": """iaa.KMeansColorQuantization()"""},
-        {"no": 25, "augmentation": """iaa.KMeansColorQuantization(n_colors=8)"""},
-        {"no": 26, "augmentation": """iaa.KMeansColorQuantization(n_colors=(4, 16))"""},
+        {
+            "no": 25,
+            "augmentation": """iaa.KMeansColorQuantization(n_colors=8)""",
+        },
+        {
+            "no": 26,
+            "augmentation": """iaa.KMeansColorQuantization(n_colors=(4, 16))""",
+        },
         {
             "no": 27,
             "augmentation": """iaa.KMeansColorQuantization(from_colorspace=iaa.ChangeColorspace.BGR)""",
@@ -413,7 +469,10 @@ augmentations = {
             to_colorspace=[iaa.ChangeColorspace.RGB, iaa.ChangeColorspace.HSV])""",
         },
         {"no": 29, "augmentation": """iaa.UniformColorQuantization()"""},
-        {"no": 30, "augmentation": """iaa.UniformColorQuantization(n_colors=8)"""},
+        {
+            "no": 30,
+            "augmentation": """iaa.UniformColorQuantization(n_colors=8)""",
+        },
         {
             "no": 31,
             "augmentation": """iaa.UniformColorQuantization(n_colors=(4, 16))""",
@@ -461,7 +520,10 @@ augmentations = {
             "augmentation": """iaa.LinearContrast((0.4, 1.6), per_channel=True)""",
         },
         {"no": 9, "augmentation": """iaa.AllChannelsCLAHE()"""},
-        {"no": 10, "augmentation": """iaa.AllChannelsCLAHE(clip_limit=(1, 10))"""},
+        {
+            "no": 10,
+            "augmentation": """iaa.AllChannelsCLAHE(clip_limit=(1, 10))""",
+        },
         {
             "no": 11,
             "augmentation": """iaa.AllChannelsCLAHE(clip_limit=(1, 10), per_channel=True)""",
@@ -482,7 +544,10 @@ augmentations = {
             "no": 17,
             "augmentation": """iaa.CLAHE(from_colorspace=iaa.CLAHE.BGR, to_colorspace=iaa.CLAHE.HSV)""",
         },
-        {"no": 18, "augmentation": """iaa.AllChannelsHistogramEqualization()"""},
+        {
+            "no": 18,
+            "augmentation": """iaa.AllChannelsHistogramEqualization()""",
+        },
         {
             "no": 19,
             "augmentation": """iaa.Alpha((0.0, 1.0), iaa.AllChannelsHistogramEqualization())""",
@@ -572,8 +637,14 @@ augmentations = {
         {"no": 14, "augmentation": """iaa.Rotate((-45, 45))"""},
         {"no": 15, "augmentation": """iaa.ShearX((-20, 20))"""},
         {"no": 16, "augmentation": """iaa.ShearY((-20, 20))"""},
-        {"no": 17, "augmentation": """iaa.PiecewiseAffine(scale=(0.01, 0.05))"""},
-        {"no": 18, "augmentation": """iaa.PerspectiveTransform(scale=(0.01, 0.15))"""},
+        {
+            "no": 17,
+            "augmentation": """iaa.PiecewiseAffine(scale=(0.01, 0.05))""",
+        },
+        {
+            "no": 18,
+            "augmentation": """iaa.PerspectiveTransform(scale=(0.01, 0.15))""",
+        },
         {
             "no": 19,
             "augmentation": """iaa.PerspectiveTransform(scale=(0.01, 0.15), keep_size=False)""",
@@ -600,34 +671,79 @@ augmentations = {
             "augmentation": """iaa.WithPolarWarping(iaa.AveragePooling((2, 8)))""",
         },
         {"no": 28, "augmentation": """iaa.Jigsaw(nb_rows=10, nb_cols=10)"""},
-        {"no": 29, "augmentation": """iaa.Jigsaw(nb_rows=(1, 4), nb_cols=(1, 4))"""},
+        {
+            "no": 29,
+            "augmentation": """iaa.Jigsaw(nb_rows=(1, 4), nb_cols=(1, 4))""",
+        },
         {
             "no": 30,
             "augmentation": """iaa.Jigsaw(nb_rows=10, nb_cols=10, max_steps=(1, 5))""",
         },
     ],
     "corrupt_like": [
-        {"no": 1, "augmentation": """iaa.imgcorruptlike.GaussianNoise(severity=2)"""},
-        {"no": 2, "augmentation": """iaa.imgcorruptlike.ShotNoise(severity=2)"""},
-        {"no": 3, "augmentation": """iaa.imgcorruptlike.ImpulseNoise(severity=2)"""},
-        {"no": 4, "augmentation": """iaa.imgcorruptlike.SpeckleNoise(severity=2)"""},
-        {"no": 5, "augmentation": """iaa.imgcorruptlike.GaussianBlur(severity=2)"""},
-        {"no": 6, "augmentation": """iaa.imgcorruptlike.GlassBlur(severity=2)"""},
-        {"no": 7, "augmentation": """iaa.imgcorruptlike.DefocusBlur(severity=2)"""},
-        {"no": 8, "augmentation": """iaa.imgcorruptlike.MotionBlur(severity=2)"""},
-        {"no": 9, "augmentation": """iaa.imgcorruptlike.ZoomBlur(severity=2)"""},
+        {
+            "no": 1,
+            "augmentation": """iaa.imgcorruptlike.GaussianNoise(severity=2)""",
+        },
+        {
+            "no": 2,
+            "augmentation": """iaa.imgcorruptlike.ShotNoise(severity=2)""",
+        },
+        {
+            "no": 3,
+            "augmentation": """iaa.imgcorruptlike.ImpulseNoise(severity=2)""",
+        },
+        {
+            "no": 4,
+            "augmentation": """iaa.imgcorruptlike.SpeckleNoise(severity=2)""",
+        },
+        {
+            "no": 5,
+            "augmentation": """iaa.imgcorruptlike.GaussianBlur(severity=2)""",
+        },
+        {
+            "no": 6,
+            "augmentation": """iaa.imgcorruptlike.GlassBlur(severity=2)""",
+        },
+        {
+            "no": 7,
+            "augmentation": """iaa.imgcorruptlike.DefocusBlur(severity=2)""",
+        },
+        {
+            "no": 8,
+            "augmentation": """iaa.imgcorruptlike.MotionBlur(severity=2)""",
+        },
+        {
+            "no": 9,
+            "augmentation": """iaa.imgcorruptlike.ZoomBlur(severity=2)""",
+        },
         {"no": 10, "augmentation": """iaa.imgcorruptlike.Fog(severity=2)"""},
         {"no": 11, "augmentation": """iaa.imgcorruptlike.Frost(severity=2)"""},
         {"no": 12, "augmentation": """iaa.imgcorruptlike.Snow(severity=2)"""},
-        {"no": 13, "augmentation": """iaa.imgcorruptlike.Spatter(severity=2)"""},
-        {"no": 14, "augmentation": """iaa.imgcorruptlike.Contrast(severity=2)"""},
-        {"no": 15, "augmentation": """iaa.imgcorruptlike.Brightness(severity=2)"""},
-        {"no": 16, "augmentation": """iaa.imgcorruptlike.Saturate(severity=2)"""},
+        {
+            "no": 13,
+            "augmentation": """iaa.imgcorruptlike.Spatter(severity=2)""",
+        },
+        {
+            "no": 14,
+            "augmentation": """iaa.imgcorruptlike.Contrast(severity=2)""",
+        },
+        {
+            "no": 15,
+            "augmentation": """iaa.imgcorruptlike.Brightness(severity=2)""",
+        },
+        {
+            "no": 16,
+            "augmentation": """iaa.imgcorruptlike.Saturate(severity=2)""",
+        },
         {
             "no": 17,
             "augmentation": """iaa.imgcorruptlike.JpegCompression(severity=2)""",
         },
-        {"no": 18, "augmentation": """iaa.imgcorruptlike.Pixelate(severity=2)"""},
+        {
+            "no": 18,
+            "augmentation": """iaa.imgcorruptlike.Pixelate(severity=2)""",
+        },
         {
             "no": 19,
             "augmentation": """iaa.imgcorruptlike.ElasticTransform(severity=2)""",
@@ -692,7 +808,10 @@ augmentations = {
         {"no": 20, "augmentation": """iaa.MedianPooling(((1, 7), (1, 7)))"""},
     ],
     "segmentation": [
-        {"no": 1, "augmentation": """iaa.Superpixels(p_replace=0.5, n_segments=64)"""},
+        {
+            "no": 1,
+            "augmentation": """iaa.Superpixels(p_replace=0.5, n_segments=64)""",
+        },
         {
             "no": 2,
             "augmentation": """iaa.Superpixels(p_replace=(0.1, 1.0), n_segments=(16, 128))""",
@@ -708,7 +827,10 @@ augmentations = {
             "augmentation": """iaa.RegularGridVoronoi((10, 30), 20, p_drop_points=0.0, 
                                                p_replace=0.9, max_size=None)""",
         },
-        {"no": 7, "augmentation": """iaa.RelativeRegularGridVoronoi(0.1, 0.25)"""},
+        {
+            "no": 7,
+            "augmentation": """iaa.RelativeRegularGridVoronoi(0.1, 0.25)""",
+        },
         {
             "no": 8,
             "augmentation": """iaa.RelativeRegularGridVoronoi(
@@ -716,7 +838,10 @@ augmentations = {
         },
     ],
     "size": [
-        {"no": 1, "augmentation": """iaa.Resize({"height": 32, "width": 64})"""},
+        {
+            "no": 1,
+            "augmentation": """iaa.Resize({"height": 32, "width": 64})""",
+        },
         {
             "no": 2,
             "augmentation": """iaa.Resize({"height": 32, "width": "keep-aspect-ratio"})""",
@@ -740,7 +865,10 @@ augmentations = {
             "no": 8,
             "augmentation": """iaa.CropAndPad(px=(-10, 10),sample_independently=False)""",
         },
-        {"no": 9, "augmentation": """iaa.PadToFixedSize(width=100, height=100)"""},
+        {
+            "no": 9,
+            "augmentation": """iaa.PadToFixedSize(width=100, height=100)""",
+        },
         {
             "no": 10,
             "augmentation": """iaa.PadToFixedSize(width=100, height=100, position="center")""",
@@ -754,7 +882,10 @@ augmentations = {
             "augmentation": """iaa.Sequential([iaa.PadToFixedSize(width=100, height=100), 
                                         iaa.CropToFixedSize(width=100, height=100)])""",
         },
-        {"no": 13, "augmentation": """iaa.CropToFixedSize(width=100, height=100)"""},
+        {
+            "no": 13,
+            "augmentation": """iaa.CropToFixedSize(width=100, height=100)""",
+        },
         {
             "no": 14,
             "augmentation": """iaa.CropToFixedSize(width=100, height=100, position="center")""",
@@ -784,7 +915,10 @@ augmentations = {
         {"no": 21, "augmentation": """iaa.PadToAspectRatio(2.0)"""},
         {"no": 22, "augmentation": """iaa.CropToSquare()"""},
         {"no": 23, "augmentation": """iaa.PadToSquare()"""},
-        {"no": 24, "augmentation": """iaa.CenterPadToFixedSize(height=20, width=30)"""},
+        {
+            "no": 24,
+            "augmentation": """iaa.CenterPadToFixedSize(height=20, width=30)""",
+        },
         {
             "no": 25,
             "augmentation": """iaa.CenterCropToFixedSize(height=20, width=10)""",
@@ -827,85 +961,133 @@ augmentations = {
     ],
 }
 
-preset_1 = [[[{'sequence_group': 'meta', 'no': 7},
-              {'sequence_group': 'meta', 'no': 9},
-              {'sequence_group': 'arithmetic', 'no': 25},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'arithmetic', 'no': 6},
-              {'sequence_group': 'arithmetic', 'no': 10},
-              {'sequence_group': 'arithmetic', 'no': 14},
-              {'sequence_group': 'arithmetic', 'no': 27},
-              {'sequence_group': 'arithmetic', 'no': 28},
-              {'sequence_group': 'arithmetic', 'no': 36}]],
-            [[{'sequence_group': 'arithmetic', 'no': 26},
-              {'sequence_group': 'arithmetic', 'no': 29},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'arithmetic', 'no': 40},
-              {'sequence_group': 'artistic', 'no': 1},
-              {'sequence_group': 'artistic', 'no': 2},
-              {'sequence_group': 'blend', 'no': 2},
-              {'sequence_group': 'blend', 'no': 4},
-              {'sequence_group': 'blend', 'no': 5}]],
-            [[{'sequence_group': 'blend', 'no': 8},
-              {'sequence_group': 'blend', 'no': 18},
-              {'sequence_group': 'blend', 'no': 19},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'blend', 'no': 11},
-              {'sequence_group': 'blend', 'no': 12},
-              {'sequence_group': 'blend', 'no': 13},
-              {'sequence_group': 'blend', 'no': 31},
-              {'sequence_group': 'gaussian_blur', 'no': 3}]],
-            [[{'sequence_group': 'gaussian_blur', 'no': 5},
-              {'sequence_group': 'color', 'no': 1},
-              {'sequence_group': 'color', 'no': 5},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'color', 'no': 9},
-              {'sequence_group': 'color', 'no': 10},
-              {'sequence_group': 'color', 'no': 11},
-              {'sequence_group': 'color', 'no': 15},
-              {'sequence_group': 'color', 'no': 16},
-              {'sequence_group': 'blend', 'no': 18}]],
-            [[{'sequence_group': 'color', 'no': 21},
-              {'sequence_group': 'contrast', 'no': 1},
-              {'sequence_group': 'gaussian_blur', 'no': 1},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'color', 'no': 23},
-              {'sequence_group': 'color', 'no': 29},
-              {'sequence_group': 'contrast', 'no': 2},
-              {'sequence_group': 'contrast', 'no': 4},
-              {'sequence_group': 'contrast', 'no': 6},
-              {'sequence_group': 'contrast', 'no': 7}]],
-            [[{'sequence_group': 'contrast', 'no': 20},
-              {'sequence_group': 'convolution', 'no': 4},
-              {'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2}],
-             [{'sequence_group': 'contrast', 'no': 9},
-              {'sequence_group': 'contrast', 'no': 10},
-              {'sequence_group': 'contrast', 'no': 14},
-              {'sequence_group': 'contrast', 'no': 18},
-              {'sequence_group': 'convolution', 'no': 6}]],
-            [[{'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2},
-              {'sequence_group': 'corrupt_like', 'no': 3}],
-             [{'sequence_group': 'edges', 'no': 2},
-              {'sequence_group': 'edges', 'no': 5},
-              {'sequence_group': 'pi_like', 'no': 13}]],
-            [[{'sequence_group': 'flip', 'no': 1},
-              {'sequence_group': 'flip', 'no': 2},
-              {'sequence_group': 'pi_like', 'no': 5}],
-             [{'sequence_group': 'corrupt_like', 'no': 10},
-              {'sequence_group': 'corrupt_like', 'no': 11},
-              {'sequence_group': 'corrupt_like', 'no': 12},
-              {'sequence_group': 'corrupt_like', 'no': 13},
-              {'sequence_group': 'pi_like', 'no': 1},
-              {'sequence_group': 'pi_like', 'no': 2},
-              {'sequence_group': 'pi_like', 'no': 3},
-              {'sequence_group': 'pi_like', 'no': 5},
-              {'sequence_group': 'pi_like', 'no': 14}]]]
-
-
+preset_1 = [
+    [
+        [
+            {"sequence_group": "meta", "no": 7},
+            {"sequence_group": "meta", "no": 9},
+            {"sequence_group": "arithmetic", "no": 25},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "arithmetic", "no": 6},
+            {"sequence_group": "arithmetic", "no": 10},
+            {"sequence_group": "arithmetic", "no": 14},
+            {"sequence_group": "arithmetic", "no": 27},
+            {"sequence_group": "arithmetic", "no": 28},
+            {"sequence_group": "arithmetic", "no": 36},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "arithmetic", "no": 26},
+            {"sequence_group": "arithmetic", "no": 29},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "arithmetic", "no": 40},
+            {"sequence_group": "artistic", "no": 1},
+            {"sequence_group": "artistic", "no": 2},
+            {"sequence_group": "blend", "no": 2},
+            {"sequence_group": "blend", "no": 4},
+            {"sequence_group": "blend", "no": 5},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "blend", "no": 8},
+            {"sequence_group": "blend", "no": 18},
+            {"sequence_group": "blend", "no": 19},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "blend", "no": 11},
+            {"sequence_group": "blend", "no": 12},
+            {"sequence_group": "blend", "no": 13},
+            {"sequence_group": "blend", "no": 31},
+            {"sequence_group": "gaussian_blur", "no": 3},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "gaussian_blur", "no": 5},
+            {"sequence_group": "color", "no": 1},
+            {"sequence_group": "color", "no": 5},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "color", "no": 9},
+            {"sequence_group": "color", "no": 10},
+            {"sequence_group": "color", "no": 11},
+            {"sequence_group": "color", "no": 15},
+            {"sequence_group": "color", "no": 16},
+            {"sequence_group": "blend", "no": 18},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "color", "no": 21},
+            {"sequence_group": "contrast", "no": 1},
+            {"sequence_group": "gaussian_blur", "no": 1},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "color", "no": 23},
+            {"sequence_group": "color", "no": 29},
+            {"sequence_group": "contrast", "no": 2},
+            {"sequence_group": "contrast", "no": 4},
+            {"sequence_group": "contrast", "no": 6},
+            {"sequence_group": "contrast", "no": 7},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "contrast", "no": 20},
+            {"sequence_group": "convolution", "no": 4},
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+        ],
+        [
+            {"sequence_group": "contrast", "no": 9},
+            {"sequence_group": "contrast", "no": 10},
+            {"sequence_group": "contrast", "no": 14},
+            {"sequence_group": "contrast", "no": 18},
+            {"sequence_group": "convolution", "no": 6},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+            {"sequence_group": "corrupt_like", "no": 3},
+        ],
+        [
+            {"sequence_group": "edges", "no": 2},
+            {"sequence_group": "edges", "no": 5},
+            {"sequence_group": "pi_like", "no": 13},
+        ],
+    ],
+    [
+        [
+            {"sequence_group": "flip", "no": 1},
+            {"sequence_group": "flip", "no": 2},
+            {"sequence_group": "pi_like", "no": 5},
+        ],
+        [
+            {"sequence_group": "corrupt_like", "no": 10},
+            {"sequence_group": "corrupt_like", "no": 11},
+            {"sequence_group": "corrupt_like", "no": 12},
+            {"sequence_group": "corrupt_like", "no": 13},
+            {"sequence_group": "pi_like", "no": 1},
+            {"sequence_group": "pi_like", "no": 2},
+            {"sequence_group": "pi_like", "no": 3},
+            {"sequence_group": "pi_like", "no": 5},
+            {"sequence_group": "pi_like", "no": 14},
+        ],
+    ],
+]
