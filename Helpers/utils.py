@@ -235,9 +235,8 @@ def get_detection_data(image, image_name, outputs, class_names):
     data['score'] = scores
     data['image_width'] = w
     data['image_height'] = h
-    data['max_iou'] = 0
     data = data[['image', 'object_name', 'x1', 'y1', 'x2', 'y2', 'score',
-                 'image_width', 'image_height', 'max_iou']]
+                 'image_width', 'image_height']]
     return data
 
 

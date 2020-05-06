@@ -80,8 +80,11 @@ class Evaluator(V3Model):
         x1, y1, x2, y2 = [frame[column] for column in columns]
         return (x2 - x1) * (y2 - y1)
 
-    def calculate_overlaps(self, detections, actual):
+    def get_true_positives(self, detections, actual, min_overlaps):
         actual = actual.rename(columns={'Image Path': 'image', 'Object Name': 'object_name'})
+        random_gen = np.random.default_rng()
+        detection_keys = random_gen.choice(len(detections), size=len(detections))
+        detections['detection_key'] = detection_keys
         total_frame = actual.merge(detections, on=['image', 'object_name'])
         total_frame['x_max_common'] = total_frame[['X_max', 'x2']].min(1)
         total_frame['x_min_common'] = total_frame[['X_min', 'x1']].max(1)
@@ -96,20 +99,53 @@ class Evaluator(V3Model):
             'x_min_common', 'y_min_common', 'x_max_common', 'y_max_common'])
         iou_areas = intersect_areas / (actual_areas + predicted_areas - intersect_areas)
         total_frame['iou'] = iou_areas
-        return total_frame
+        if isinstance(min_overlaps, float):
+            return total_frame[total_frame['iou'] >= min_overlaps]
+        class_data = [(name, total_frame[total_frame['object_name'] == name])
+                      for name in self.class_names]
+        thresholds = [min_overlaps[item[0]] for item in class_data]
+        frames = [item[1][item[1]['iou'] >= threshold]
+                  for (item, threshold) in zip(class_data, thresholds) if not item[1].empty]
+        return pd.concat(frames)
 
-    def get_counts(self, prediction_file, actual_file):
-        counts = {}
-        detection_data = pd.read_csv(prediction_file)
-        width, height = detection_data.iloc[0][['image_width', 'image_height']]
-        actual_data = adjust_non_voc_csv(actual_file, '', width, height)
+    @staticmethod
+    def get_false_positives(detections, true_positive):
+        keys_before = detections['detection_key'].values
+        keys_after = true_positive['detection_key'].values
+        false_keys = np.where(np.isin(keys_before, keys_after, invert=True))
+        false_keys = keys_before[false_keys]
+        false_positives = detections.set_index('detection_key').loc[false_keys]
+        return false_positives
+
+    def get_class_stats(self, detection_data, actual_data, tp_data, display=False):
+        stats = {}
         for object_name in self.class_names:
             detections = detection_data[detection_data['object_name'] == object_name]
             actual = actual_data[actual_data['Object Name'] == object_name]
-            counts[object_name] = self.calculate_overlaps(detections, actual)
-        for item in counts.values():
-            print(item)
+            true_positives = tp_data[tp_data['object_name'] == object_name]
+            false_positives = self.get_false_positives(detections, true_positives)
+            stats[object_name] = [
+                {'actual': actual, 'detections': detections, 'true_positives': true_positives,
+                 'false_positives': false_positives}]
+            if display:
+                print(30 * '=')
+                print(f'Obj: {object_name}')
+                print(f'Number of detections: {len(detections)}')
+                print(f'Number of actual: {len(actual)}')
+                print(f'True positives: {len(true_positives)}')
+                print(f'False positives: {len(detections) - len(true_positives)}')
+                print(f'False negatives: {len(actual) - len(true_positives)}')
+                print(30 * '=')
+                print()
+        return stats
 
+    def get_counts(self, prediction_file, actual_file, min_overlaps,
+                   display_stats=False):
+        detection_data = pd.read_csv(prediction_file)
+        width, height = detection_data.iloc[0][['image_width', 'image_height']]
+        actual_data = adjust_non_voc_csv(actual_file, '', width, height)
+        tt_fr = self.get_true_positives(detection_data, actual_data, min_overlaps)
+        stats = self.get_class_stats(detection_data, actual_data, tt_fr, display_stats)
 
 
 if __name__ == '__main__':
@@ -118,5 +154,10 @@ if __name__ == '__main__':
     ev = Evaluator((416, 416, 3), '../../bhills_train.tfrecord',
                    '../../bhills_test.tfrecord', '../Config/beverly_hills.txt', anc)
     # ev.make_predictions('../../../beverly_hills/models/beverly_hills_model.tf', merge=True)
-    ev.get_counts('../Caches/full_dataset_predictions.csv', '../Data/bh_labels.csv')
+    ovs = {'Car': 0.65, 'Street Sign': 0.5, 'Palm Tree': 0.6, 'Street Lamp': 0.5,
+           'Minivan': 0.5, 'Traffic Lights': 0.5, 'Pedestrian': 0.55, 'Fire Hydrant': 0.5,
+           'Flag': 0.5, 'Trash Can': 0.5, 'Bicycle': 0.5, 'Bus': 0.5, 'Pickup Truck': 0.5,
+           'Road Block': 0.6, 'Delivery Truck': 0.5, 'Motorcycle': 0.5}
+    ev.get_counts('../Caches/full_dataset_predictions.csv', '../Data/bh_labels.csv',
+                  min_overlaps=ovs, display_stats=True)
 
