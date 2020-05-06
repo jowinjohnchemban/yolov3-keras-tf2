@@ -16,13 +16,13 @@ from lxml import etree
 
 def get_logger():
     formatter = logging.Formatter(
-        "%(asctime)s %(name)s.%(funcName)s +%(lineno)s: "
-        "%(levelname)-8s [%(process)d] %(message)s"
+        '%(asctime)s %(name)s.%(funcName)s +%(lineno)s: '
+        '%(levelname)-8s [%(process)d] %(message)s'
     )
-    logger = logging.getLogger("session_log")
+    logger = logging.getLogger('session_log')
     logger.setLevel(logging.DEBUG)
-    file_title = os.path.join("Logs", "session.log")
-    if "Logs" not in os.listdir():
+    file_title = os.path.join('Logs', 'session.log')
+    if 'Logs' not in os.listdir():
         file_title = f'{os.path.join("..", file_title)}'
     file_handler = handlers.RotatingFileHandler(file_title, backupCount=10)
     file_handler.setFormatter(formatter)
@@ -44,7 +44,7 @@ def timer(logger):
             total_time = perf_counter() - start_time
             if logger is not None:
                 logger.info(
-                    f"{func.__name__} execution time: " f"{total_time} seconds"
+                    f'{func.__name__} execution time: ' f'{total_time} seconds'
                 )
             if result is not None:
                 return result
@@ -255,18 +255,18 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
 def add_xml_path(xml_file, path):
     tree = ElementTree.parse(xml_file)
     top = tree.getroot()
-    folder_tag = tree.find("folder")
+    folder_tag = tree.find('folder')
     folder_tag.text = path
-    file_name_tag = tree.find("filename")
-    path_tag = SubElement(top, "path")
+    file_name_tag = tree.find('filename')
+    path_tag = SubElement(top, 'path')
     path_tag.text = os.path.join(folder_tag.text, file_name_tag.text)
-    rough_string = ElementTree.tostring(top, "utf8")
+    rough_string = ElementTree.tostring(top, 'utf8')
     root = etree.fromstring(rough_string)
-    pretty = etree.tostring(root, pretty_print=True, encoding="utf-8").replace(
-        "  ".encode(), "\t".encode()
+    pretty = etree.tostring(root, pretty_print=True, encoding='utf-8').replace(
+        '  '.encode(), '\t'.encode()
     )
     os.remove(xml_file)
-    with open(xml_file, "wb") as output:
+    with open(xml_file, 'wb') as output:
         output.write(pretty)
 
 
@@ -276,25 +276,25 @@ def get_detection_data(image, image_name, outputs, class_names):
         item[0][: int(nums)].numpy() for item in outputs[:-1]
     ]
     w, h = np.flip(image.shape[0:2])
-    data = pd.DataFrame(boxes, columns=["x1", "y1", "x2", "y2"])
-    data[["x1", "x2"]] = (data[["x1", "x2"]] * w).astype("int64")
-    data[["y1", "y2"]] = (data[["y1", "y2"]] * h).astype("int64")
-    data["object_name"] = np.array(class_names)[classes.astype("int64")]
-    data["image"] = image_name
-    data["score"] = scores
-    data["image_width"] = w
-    data["image_height"] = h
+    data = pd.DataFrame(boxes, columns=['x1', 'y1', 'x2', 'y2'])
+    data[['x1', 'x2']] = (data[['x1', 'x2']] * w).astype('int64')
+    data[['y1', 'y2']] = (data[['y1', 'y2']] * h).astype('int64')
+    data['object_name'] = np.array(class_names)[classes.astype('int64')]
+    data['image'] = image_name
+    data['score'] = scores
+    data['image_width'] = w
+    data['image_height'] = h
     data = data[
         [
-            "image",
-            "object_name",
-            "x1",
-            "y1",
-            "x2",
-            "y2",
-            "score",
-            "image_width",
-            "image_height",
+            'image',
+            'object_name',
+            'x1',
+            'y1',
+            'x2',
+            'y2',
+            'score',
+            'image_width',
+            'image_height',
         ]
     ]
     return data

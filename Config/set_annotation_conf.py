@@ -18,7 +18,7 @@ def set_voc_tags(
     y0,
     x1,
     y1,
-    conf_file="voc_conf.json",
+    conf_file='voc_conf.json',
     indent=4,
     sort_keys=False,
 ):
@@ -47,54 +47,54 @@ def set_voc_tags(
     Returns:
         None.
     """
-    if conf_file in os.listdir("."):
+    if conf_file in os.listdir('.'):
         os.remove(os.path.join(os.getcwd(), conf_file))
     conf = {
-        "Tree": {
-            "Tree Tag": tree,
-            "Folder": folder,
-            "Filename": filename,
-            "Path": path,
+        'Tree': {
+            'Tree Tag': tree,
+            'Folder': folder,
+            'Filename': filename,
+            'Path': path,
         },
-        "Size": {
-            "Size Tag": size,
-            "Width": width,
-            "Height": height,
-            "Depth": depth,
+        'Size': {
+            'Size Tag': size,
+            'Width': width,
+            'Height': height,
+            'Depth': depth,
         },
-        "Object": {
-            "Object Tag": obj,
-            "Object Name": obj_name,
-            "Object Box": {
-                "Object Box Tag": box,
-                "X0": x0,
-                "Y0": y0,
-                "X1": x1,
-                "Y1": y1,
+        'Object': {
+            'Object Tag': obj,
+            'Object Name': obj_name,
+            'Object Box': {
+                'Object Box Tag': box,
+                'X0': x0,
+                'Y0': y0,
+                'X1': x1,
+                'Y1': y1,
             },
         },
     }
 
-    with open(conf_file, "w") as conf_out:
+    with open(conf_file, 'w') as conf_out:
         json.dump(conf, conf_out, indent=indent, sort_keys=sort_keys)
 
 
-if __name__ == "__main__":
-    tree_tag = "annotation"
-    folder_tag = "folder"
-    file_tag = "filename"
-    path_tag = "path"
-    size_tag = "size"
-    width_tag = "width"
-    height_tag = "height"
-    depth_tag = "depth"
-    object_tag = "object"
-    object_name = "name"
-    box_tag = "bndbox"
-    x_min_tag = "xmin"
-    y_min_tag = "ymin"
-    x_max_tag = "xmax"
-    y_max_tag = "ymax"
+if __name__ == '__main__':
+    tree_tag = 'annotation'
+    folder_tag = 'folder'
+    file_tag = 'filename'
+    path_tag = 'path'
+    size_tag = 'size'
+    width_tag = 'width'
+    height_tag = 'height'
+    depth_tag = 'depth'
+    object_tag = 'object'
+    object_name = 'name'
+    box_tag = 'bndbox'
+    x_min_tag = 'xmin'
+    y_min_tag = 'ymin'
+    x_max_tag = 'xmax'
+    y_max_tag = 'ymax'
     set_voc_tags(
         tree_tag,
         folder_tag,

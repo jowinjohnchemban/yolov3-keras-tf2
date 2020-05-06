@@ -42,28 +42,28 @@ class DataAugment:
         self.labels_file = labels_file
         self.mapping = pd.read_csv(labels_file)
         self.image_folder = (
-            Path(os.path.join("..", "Data", "Photos")).absolute().resolve()
+            Path(os.path.join('..', 'Data', 'Photos')).absolute().resolve()
         )
         if image_folder:
             self.image_folder = Path(image_folder).absolute().resolve()
         self.image_paths = [
             Path(os.path.join(self.image_folder, image)).absolute().resolve()
             for image in os.listdir(self.image_folder)
-            if not image.startswith(".")
+            if not image.startswith('.')
         ]
         self.image_paths_copy = self.image_paths.copy()
         if not self.image_paths:
             default_logger.error(
-                f"Augmentation aborted: no photos found in {self.image_folder}"
+                f'Augmentation aborted: no photos found in {self.image_folder}'
             )
-            raise ValueError(f"No photos given")
+            raise ValueError(f'No photos given')
         self.image_width, self.image_height = imagesize.get(self.image_paths[0])
         self.converted_coordinates = (
             pd.read_csv(converted_coordinates_file)
-            if (converted_coordinates_file)
+            if converted_coordinates_file
             else self.relative_to_coordinates()
         )
-        self.converted_groups = self.converted_coordinates.groupby("image")
+        self.converted_groups = self.converted_coordinates.groupby('image')
         self.augmentation_data = []
         self.augmentation_sequences = []
         self.augmentation_map = augmentation_map
@@ -95,18 +95,18 @@ class DataAugment:
         total_target = (len(sequences) * len(self.image_paths)) + len(
             self.image_paths
         )
-        default_logger.info(f"Total images(old + augmented): {total_target}")
+        default_logger.info(f'Total images(old + augmented): {total_target}')
         for group in sequences:
             some_ofs = [
-                self.augmentation_map[item["sequence_group"]][item["no"] - 1]
+                self.augmentation_map[item['sequence_group']][item['no'] - 1]
                 for item in group[0]
             ]
             one_ofs = [
-                self.augmentation_map[item["sequence_group"]][item["no"] - 1]
+                self.augmentation_map[item['sequence_group']][item['no'] - 1]
                 for item in group[1]
             ]
-            some_of_aug = [item["augmentation"] for item in some_ofs]
-            one_of_aug = [item["augmentation"] for item in one_ofs]
+            some_of_aug = [item['augmentation'] for item in some_ofs]
+            one_of_aug = [item['augmentation'] for item in one_ofs]
             some_of_seq = iaa.SomeOf(
                 (0, 5), [eval(item) for item in some_of_aug]
             )
@@ -127,7 +127,7 @@ class DataAugment:
         Returns:
             numpy array(image), image_path
         """
-        assert os.path.exists(image_path), f"{image_path} does not exist"
+        assert os.path.exists(image_path), f'{image_path} does not exist'
         image = cv2.imread(image_path)
         if new_size:
             return cv2.resize(image, new_size)
@@ -196,26 +196,26 @@ class DataAugment:
         new_data = pd.DataFrame(
             items_to_save,
             columns=[
-                "image",
-                "x1",
-                "y1",
-                "x2",
-                "y2",
-                "object_type",
-                "object_id",
-                "bx",
-                "by",
-                "bw",
-                "bh",
+                'image',
+                'x1',
+                'y1',
+                'x2',
+                'y2',
+                'object_type',
+                'object_id',
+                'bx',
+                'by',
+                'bw',
+                'bh',
             ],
         )
-        new_data[["x1", "y1", "x2", "y2"]] = new_data[
-            ["x1", "y1", "x2", "y2"]
-        ].astype("int64")
+        new_data[['x1', 'y1', 'x2', 'y2']] = new_data[
+            ['x1', 'y1', 'x2', 'y2']
+        ].astype('int64')
         if out_file:
             new_data.to_csv(out_file, index=False)
         default_logger.info(
-            f"Converted labels in {self.labels_file} to coordinates"
+            f'Converted labels in {self.labels_file} to coordinates'
         )
         return new_data
 
@@ -242,7 +242,7 @@ class DataAugment:
         """
         boxes = []
         frame_before = self.get_image_data(image_path)
-        for item in frame_before[["x1", "y1", "x2", "y2"]].values:
+        for item in frame_before[['x1', 'y1', 'x2', 'y2']].values:
             boxes.append(BoundingBox(*item))
         return (
             BoundingBoxesOnImage(
@@ -262,7 +262,7 @@ class DataAugment:
             numpy array of shape (batch_size, height, width, channels)
         """
         batch = [
-            f"{self.image_paths_copy.pop()!s}"
+            f'{self.image_paths_copy.pop()!s}'
             for _ in range(batch_size)
             if self.image_paths_copy
         ]
@@ -295,25 +295,25 @@ class DataAugment:
             None
         """
         frame_after = pd.DataFrame(
-            bbs_aug.bounding_boxes, columns=["x1y1", "x2y2"]
+            bbs_aug.bounding_boxes, columns=['x1y1', 'x2y2']
         )
         if (
             frame_after.empty
         ):  # some post-augmentation photos do not contain bounding boxes
             default_logger.warning(
-                f"skipping image: {new_name}: no bounding boxes after "
-                f"augmentation"
+                f'skipping image: {new_name}: no bounding boxes after '
+                f'augmentation'
             )
             return
         frame_after = pd.DataFrame(
             np.hstack(
-                (frame_after["x1y1"].tolist(), frame_after["x2y2"].tolist())
+                (frame_after['x1y1'].tolist(), frame_after['x2y2'].tolist())
             ),
-            columns=["x1", "y1", "x2", "y2"],
-        ).astype("int64")
-        frame_after["object_type"] = frame_before["object_type"].values
-        frame_after["object_id"] = frame_before["object_id"].values
-        frame_after["image"] = new_name
+            columns=['x1', 'y1', 'x2', 'y2'],
+        ).astype('int64')
+        frame_after['object_type'] = frame_before['object_type'].values
+        frame_after['object_id'] = frame_before['object_id'].values
+        frame_after['image'] = new_name
         for index, row in frame_after.iterrows():
             x1, y1, x2, y2, object_type, object_id, image_name = row
             bx, by, bw, bh = self.calculate_ratios(x1, y1, x2, y2)
@@ -335,8 +335,8 @@ class DataAugment:
         current_sequence = 1
         for augmentation_sequence in self.augmentation_sequences:
             new_image_name = (
-                f"aug-{self.session_id}-sequence-{current_sequence}"
-                f"-{os.path.basename(image_path)}"
+                f'aug-{self.session_id}-sequence-{current_sequence}'
+                f'-{os.path.basename(image_path)}'
             )
             new_image_path = os.path.join(self.image_folder, new_image_name)
             bbs, frame_before = self.get_bounding_boxes_over_image(image_path)
@@ -353,14 +353,14 @@ class DataAugment:
             current_sequence += 1
             self.augmented_images += 1
         current = os.path.basename(image_path)
-        completed = f"{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}"
+        completed = f'{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}'
         percent = (
             self.augmented_images
             / (self.total_images * len(self.augmentation_sequences))
             * 100
         )
         print(
-            f"\raugmenting {current}\t{completed}\t{percent}% completed", end=""
+            f'\raugmenting {current}\t{completed}\t{percent}% completed', end=''
         )
 
     @timer(default_logger)
@@ -374,9 +374,9 @@ class DataAugment:
         Returns:
             None
         """
-        default_logger.info(f"Started augmentation with {self.workers} workers")
-        default_logger.info(f"Total images to augment: {self.total_images}")
-        default_logger.info(f"Session assigned id: {self.session_id}")
+        default_logger.info(f'Started augmentation with {self.workers} workers')
+        default_logger.info(f'Total images to augment: {self.total_images}')
+        default_logger.info(f'Session assigned id: {self.session_id}')
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
             while self.image_paths_copy:
                 current_batch, current_paths = self.load_batch(
@@ -388,25 +388,25 @@ class DataAugment:
                 }
                 for future_augmented in as_completed(future_augmentations):
                     future_augmented.result()
-        default_logger.info(f"Augmentation completed")
+        default_logger.info(f'Augmentation completed')
         augmentation_frame = pd.DataFrame(
             self.augmentation_data, columns=self.mapping.columns
         )
         saving_path = os.path.join(
-            self.image_folder, f"augmented_data_plus_original.csv"
+            self.image_folder, f'augmented_data_plus_original.csv'
         )
         combined = pd.concat([self.mapping, augmentation_frame])
-        for item in ["bx", "by", "bw", "bh"]:
+        for item in ['bx', 'by', 'bw', 'bh']:
             combined = combined.drop(combined[combined[item] > 1].index)
         combined.to_csv(saving_path, index=False)
-        default_logger.info(f"Saved old + augmented labels to {saving_path}")
+        default_logger.info(f'Saved old + augmented labels to {saving_path}')
         adjusted_combined = adjust_non_voc_csv(
             saving_path, self.image_folder, self.image_width, self.image_height
         )
-        adjusted_saving_path = saving_path.replace("augmented", "adjusted_aug")
+        adjusted_saving_path = saving_path.replace('augmented', 'adjusted_aug')
         adjusted_combined.to_csv(adjusted_saving_path, index=False)
         default_logger.info(
-            f"Saved old + augmented (adjusted) labels to {adjusted_saving_path}"
+            f'Saved old + augmented (adjusted) labels to {adjusted_saving_path}'
         )
         return adjusted_combined
 
@@ -423,9 +423,9 @@ class DataAugment:
             None
         """
         for bef, aft in out:
-            cv2.imshow("before", bef)
-            cv2.imshow("after", aft)
-            cv2.moveWindow("after", *move_after)
+            cv2.imshow('before', bef)
+            cv2.imshow('after', aft)
+            cv2.moveWindow('after', *move_after)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
@@ -489,14 +489,14 @@ class DataAugment:
             None
         """
         images = [
-            cv2.imread(f"{image}") for image in self.image_paths[:tensor_size]
+            cv2.imread(f'{image}') for image in self.image_paths[:tensor_size]
         ]
         image_tensor = np.array(images)
         to_display = []
         for item in self.augmentation_map[sequence_group]:
-            print(item["no"], item["augmentation"])
+            print(item['no'], item['augmentation'])
             try:
-                current_augment = eval(item["augmentation"])
+                current_augment = eval(item['augmentation'])
                 if not display_boxes:
                     to_display = current_augment(images=image_tensor)
                     self.display_windows(
@@ -511,15 +511,15 @@ class DataAugment:
                         move_after,
                     )
             except Exception as e:
-                print(f"{e} for {item}")
+                print(f'{e} for {item}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     aug = DataAugment(
-        "../../../beverly_hills/bh_labels.csv",
+        '../../../beverly_hills/bh_labels.csv',
         augmentations,
-        converted_coordinates_file="scratch/label_coordinates.csv",
-        image_folder="../../../beverly_hills/photos",
+        converted_coordinates_file='scratch/label_coordinates.csv',
+        image_folder='../../../beverly_hills/photos',
     )
     for it in augmentations:
         aug.preview_augmentations(2, it, True)

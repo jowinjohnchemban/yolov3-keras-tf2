@@ -64,25 +64,25 @@ class V3Model:
             Model,
         )
         self.func_names = [
-            "zero_padding",
-            "batch_normalization",
-            "leaky_relu",
-            "conv2d",
-            "add",
-            "input",
-            "up_sample",
-            "concat",
-            "lambda",
-            "model",
+            'zero_padding',
+            'batch_normalization',
+            'leaky_relu',
+            'conv2d',
+            'add',
+            'input',
+            'up_sample',
+            'concat',
+            'lambda',
+            'model',
         ]
         self.layer_names = {
-            func.__name__: f"layer_CURRENT_LAYER_{name}"
+            func.__name__: f'layer_CURRENT_LAYER_{name}'
             for func, name in zip(self.funcs, self.func_names)
         }
         self.shortcuts = []
         self.training_model = None
         self.inference_model = None
-        self.output_layers = ["output_2", "output_1", "output_0"]
+        self.output_layers = ['output_2', 'output_1', 'output_0']
         self.max_boxes = max_boxes
         self.iou_threshold = iou_threshold
         self.score_threshold = score_threshold
@@ -100,10 +100,10 @@ class V3Model:
             result of func
         """
         name = self.layer_names[func.__name__].replace(
-            "CURRENT_LAYER", f"{self.current_layer}"
+            'CURRENT_LAYER', f'{self.current_layer}'
         )
-        if func.__name__ == "Model":
-            name = f"layer_{self.current_layer}_{self.output_layers.pop()}"
+        if func.__name__ == 'Model':
+            name = f'layer_{self.current_layer}_{self.output_layers.pop()}'
         result = func(name=name, *args, **kwargs)
         self.current_layer += 1
         if x is not None:
@@ -126,12 +126,12 @@ class V3Model:
         Returns:
             x or x added to shortcut.
         """
-        if action == "append":
+        if action == 'append':
             self.shortcuts.append(x)
-        padding = "same"
+        padding = 'same'
         if strides != 1:
             x = self.apply_func(ZeroPadding2D, x, padding=((1, 0), (1, 0)))
-            padding = "valid"
+            padding = 'valid'
         x = self.apply_func(
             Conv2D,
             x,
@@ -145,7 +145,7 @@ class V3Model:
         if batch_norm:
             x = self.apply_func(BatchNormalization, x)
             x = self.apply_func(LeakyReLU, x, alpha=0.1)
-        if action == "add":
+        if action == 'add':
             return self.apply_func(Add, [self.shortcuts.pop(), x])
         return x
 
@@ -210,58 +210,58 @@ class V3Model:
         input_initial = self.apply_func(Input, shape=self.input_shape)
         x = self.convolution_block(input_initial, 32, 3, 1, True)
         x = self.convolution_block(x, 64, 3, 2, True)
-        x = self.convolution_block(x, 32, 1, 1, True, "append")
-        x = self.convolution_block(x, 64, 3, 1, True, "add")  #
+        x = self.convolution_block(x, 32, 1, 1, True, 'append')
+        x = self.convolution_block(x, 64, 3, 1, True, 'add')  #
         x = self.convolution_block(x, 128, 3, 2, True)
-        x = self.convolution_block(x, 64, 1, 1, True, "append")
-        x = self.convolution_block(x, 128, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 64, 1, 1, True, "append")
-        x = self.convolution_block(x, 128, 3, 1, True, "add")  #
+        x = self.convolution_block(x, 64, 1, 1, True, 'append')
+        x = self.convolution_block(x, 128, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 64, 1, 1, True, 'append')
+        x = self.convolution_block(x, 128, 3, 1, True, 'add')  #
         x = self.convolution_block(x, 256, 3, 2, True)
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 128, 1, 1, True, "append")
-        x = self.convolution_block(x, 256, 3, 1, True, "add")  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 128, 1, 1, True, 'append')
+        x = self.convolution_block(x, 256, 3, 1, True, 'add')  #
         skip_36 = x
         x = self.convolution_block(x, 512, 3, 2, True)
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 256, 1, 1, True, "append")
-        x = self.convolution_block(x, 512, 3, 1, True, "add")  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 256, 1, 1, True, 'append')
+        x = self.convolution_block(x, 512, 3, 1, True, 'add')  #
         skip_61 = x
         x = self.convolution_block(x, 1024, 3, 2, True)
-        x = self.convolution_block(x, 512, 1, 1, True, "append")
-        x = self.convolution_block(x, 1024, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 512, 1, 1, True, "append")
-        x = self.convolution_block(x, 1024, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 512, 1, 1, True, "append")
-        x = self.convolution_block(x, 1024, 3, 1, True, "add")  #
-        x = self.convolution_block(x, 512, 1, 1, True, "append")
-        x = self.convolution_block(x, 1024, 3, 1, True, "add")  #
+        x = self.convolution_block(x, 512, 1, 1, True, 'append')
+        x = self.convolution_block(x, 1024, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 512, 1, 1, True, 'append')
+        x = self.convolution_block(x, 1024, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 512, 1, 1, True, 'append')
+        x = self.convolution_block(x, 1024, 3, 1, True, 'add')  #
+        x = self.convolution_block(x, 512, 1, 1, True, 'append')
+        x = self.convolution_block(x, 1024, 3, 1, True, 'add')  #
         x = self.convolution_block(x, 512, 1, 1, True)
         x = self.convolution_block(x, 1024, 3, 1, True)
         x = self.convolution_block(x, 512, 1, 1, True)
@@ -290,7 +290,7 @@ class V3Model:
         detection_2 = x
         output_2 = self.output(detection_2, 128)
         self.training_model = Model(
-            input_initial, [output_0, output_1, output_2], name="training_model"
+            input_initial, [output_0, output_1, output_2], name='training_model'
         )
         boxes_0 = self.apply_func(
             Lambda,
@@ -319,49 +319,49 @@ class V3Model:
             lambda item: self.get_nms(item),
         )
         self.inference_model = Model(
-            input_initial, outputs, name="inference_model"
+            input_initial, outputs, name='inference_model'
         )
-        default_logger.info("Training and inference models created")
+        default_logger.info('Training and inference models created')
         return self.training_model, self.inference_model
 
     @timer(default_logger)
     def load_weights(self, weights_file):
-        if weights_file.endswith(".tf"):
+        if weights_file.endswith('.tf'):
             self.training_model.load_weights(weights_file)
-            default_logger.info(f"Loaded weights: {weights_file} ... success")
+            default_logger.info(f'Loaded weights: {weights_file} ... success')
             return
-        with open(weights_file, "rb") as weights_data:
-            print(f"Loading pre-trained weights ...")
+        with open(weights_file, 'rb') as weights_data:
+            print(f'Loading pre-trained weights ...')
             major, minor, revision, seen, _ = np.fromfile(
                 weights_data, dtype=np.int32, count=5
             )
             all_layers = [
                 layer
                 for layer in self.training_model.layers
-                if "output" not in layer.name
+                if 'output' not in layer.name
             ]
             output_models = [
                 layer
                 for layer in self.training_model.layers
-                if "output" in layer.name
+                if 'output' in layer.name
             ]
             output_layers = [item.layers for item in output_models]
             for output_item in output_layers:
                 all_layers.extend(output_item)
-            all_layers.sort(key=lambda layer: int(layer.name.split("_")[1]))
+            all_layers.sort(key=lambda layer: int(layer.name.split('_')[1]))
             for i, layer in enumerate(all_layers):
                 current_read = weights_data.tell()
                 total_size = os.fstat(weights_data.fileno()).st_size
                 print(
-                    f"\r{round(100 * (current_read / total_size))}%\t{current_read}/{total_size}",
-                    end="",
+                    f'\r{round(100 * (current_read / total_size))}%\t{current_read}/{total_size}',
+                    end='',
                 )
-                if "conv2d" not in layer.name:
+                if 'conv2d' not in layer.name:
                     continue
                 next_layer = all_layers[i + 1]
                 b_norm_layer = (
                     next_layer
-                    if "batch_normalization" in next_layer.name
+                    if 'batch_normalization' in next_layer.name
                     else None
                 )
                 filters = layer.filters
@@ -404,14 +404,14 @@ class V3Model:
                 if b_norm_layer is not None:
                     layer.set_weights([convolution_weights])
                     b_norm_layer.set_weights(bn_weights)
-            assert len(weights_data.read()) == 0, "failed to read all data"
-        default_logger.info(f"Loaded weights: {weights_file} ... success")
+            assert len(weights_data.read()) == 0, 'failed to read all data'
+        default_logger.info(f'Loaded weights: {weights_file} ... success')
         print()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mod = V3Model((416, 416, 3), 80)
     tr, inf = mod.create_models()
-    mod.load_weights("../../yolov3.weights")
+    mod.load_weights('../../yolov3.weights')
     tr.summary()
     inf.summary()
