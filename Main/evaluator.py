@@ -6,7 +6,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Main.models import V3Model
 from Helpers.dataset_handlers import read_tfr, get_feature_map
-from Helpers.utils import transform_images, get_detection_data
+from Helpers.utils import transform_images, get_detection_data, default_logger, timer
 from Helpers.annotation_parsers import adjust_non_voc_csv
 
 
@@ -80,6 +80,7 @@ class Evaluator(V3Model):
                 self.predicted += 1
         return pd.concat(predictions)
 
+    @timer(default_logger)
     def make_predictions(self, trained_weights, merge=False, workers=16):
         self.create_models()
         self.load_weights(trained_weights)
@@ -230,34 +231,43 @@ class Evaluator(V3Model):
         ]
         return pd.concat([true_positive, false_positive])
 
-    # def get_class_stats(self, detection_data, actual_data, tp_data, display=False):
-    #     stats = {}
-    #     for object_name in self.class_names:
-    #         detections = detection_data[detection_data['object_name'] == object_name]
-    #         actual = actual_data[actual_data['Object Name'] == object_name]
-    #         true_positives = tp_data[tp_data['object_name'] == object_name]
-    #         false_positives = self.get_false_positives(detections, true_positives)
-    #         stats[object_name] = [
-    #             {'actual': actual, 'detections': detections, 'true_positives': true_positives,
-    #              'false_positives': false_positives}]
-    #         if display:
-    #             print(30 * '=')
-    #             print(f'Obj: {object_name}')
-    #             print(f'Number of detections: {len(detections)}')
-    #             print(f'Number of actual: {len(actual)}')
-    #             print(f'True positives: {len(true_positives)}')
-    #             print(f'False positives: {len(detections) - len(true_positives)}')
-    #             print(f'False negatives: {len(actual) - len(true_positives)}')
-    #             print(30 * '=')
-    #             print()
-    #     return stats
+    def calculate_stats(self, actual_data, detection_data, true_positives, false_positives, combined):
+        class_stats = []
+        for class_name in self.class_names:
+            stats = dict()
+            stats['Class Name'] = class_name
+            stats['Average Precision'] = (combined[combined['object_name'] == class_name]
+                                          ['average_precision'].sum() * 100)
+            stats['Actual Detections'] = len(actual_data[actual_data["Object Name"] == class_name])
+            stats['Detections'] = len(detection_data[detection_data["object_name"] == class_name])
+            stats['True Positives'] = len(true_positives[true_positives["object_name"] == class_name])
+            stats['False Positives'] = len(false_positives[false_positives["object_name"] == class_name])
+            stats['Combined'] = len(combined[combined["object_name"] == class_name])
+            class_stats.append(stats)
+        return pd.DataFrame(class_stats)
 
-    def get_full_frame(
+    @staticmethod
+    def calculate_ap(combined, total_actual):
+        combined = combined.sort_values(by='score', ascending=False).reset_index(drop=True)
+        combined['acc_tp'] = combined['true_positive'].cumsum()
+        combined['acc_fp'] = combined['false_positive'].cumsum()
+        combined['precision'] = combined['acc_tp'] / (combined['acc_tp'] + combined['acc_fp'])
+        combined['recall'] = combined['acc_tp'] / total_actual
+        combined['m_pre1'] = combined['precision'].shift(1, fill_value=0)
+        combined['m_pre'] = combined[['m_pre1', 'precision']].max(axis=1)
+        combined['m_rec1'] = combined['recall'].shift(1, fill_value=0)
+        combined.loc[combined['m_rec1'] != combined['recall'], 'valid_m_rec'] = 1
+        combined['average_precision'] = (combined['recall'] - combined['m_rec1']) * combined['m_pre']
+        return combined
+
+    @timer(default_logger)
+    def get_all_stats(
         self, prediction_file, actual_file, min_overlaps, display_stats=False
     ):
         detection_data = pd.read_csv(prediction_file)
         width, height = detection_data.iloc[0][['image_width', 'image_height']]
         actual_data = adjust_non_voc_csv(actual_file, '', width, height)
+        class_counts = actual_data['Object Name'].value_counts().to_dict()
         true_positives = self.get_true_positives(
             detection_data, actual_data, min_overlaps
         )
@@ -265,10 +275,18 @@ class Evaluator(V3Model):
             detection_data, true_positives
         )
         combined = self.combine_results(true_positives, false_positives)
-        print(len(detection_data))
-        print(len(true_positives))
-        print(len(false_positives))
-        print(len(combined))
+        class_groups = combined.groupby('object_name')
+        calculated = pd.concat([self.calculate_ap(group, class_counts.get(object_name))
+                                for object_name, group in class_groups])
+        stats = self.calculate_stats(
+                actual_data, detection_data, true_positives, false_positives, calculated)
+        if display_stats:
+            pd.set_option('display.max_rows', None,
+                          'display.max_columns', None,
+                          'display.width', None)
+            print(stats)
+            pd.reset_option('display.[max_rows, max_columns, width]')
+        return stats
 
 
 if __name__ == '__main__':
@@ -294,24 +312,24 @@ if __name__ == '__main__':
     )
     # ev.make_predictions('../../../beverly_hills/models/beverly_hills_model.tf', merge=True)
     ovs = {
-        'Car': 0.65,
+        'Car': 0.55,
         'Street Sign': 0.5,
-        'Palm Tree': 0.6,
+        'Palm Tree': 0.5,
         'Street Lamp': 0.5,
         'Minivan': 0.5,
         'Traffic Lights': 0.5,
-        'Pedestrian': 0.55,
+        'Pedestrian': 0.5,
         'Fire Hydrant': 0.5,
         'Flag': 0.5,
         'Trash Can': 0.5,
         'Bicycle': 0.5,
         'Bus': 0.5,
         'Pickup Truck': 0.5,
-        'Road Block': 0.6,
+        'Road Block': 0.5,
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    ev.get_full_frame(
+    ev.get_all_stats(
         '../Caches/full_dataset_predictions.csv',
         '../Data/bh_labels.csv',
         min_overlaps=ovs,

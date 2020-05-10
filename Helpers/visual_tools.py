@@ -106,6 +106,17 @@ def visualize_boxes(relative_anchors, sample_image, save_result=False):
     save_fig(title, save_result)
 
 
+def visualize_pr(calculated, save_result=False):
+    for item in calculated:
+        obj = item.iloc[0]["object_name"]
+        plt.plot(item['recall'], item['precision'])
+        plt.xlabel('recall')
+        plt.ylabel('precision')
+        title = f'Precision and recall curve for {obj}'
+        plt.title(title)
+        save_fig(title, save_result)
+
+
 def visualization_wrapper(to_visualize):
     """
     Wrapper for visualization.
@@ -132,5 +143,4 @@ def visualization_wrapper(to_visualize):
             visualize_boxes(result[0], '../sample_image.png')
             plt.show()
         return result
-
     return visualized
