@@ -114,7 +114,18 @@ def visualize_boxes(relative_anchors, sample_image, save_result=True):
     save_fig(title, save_result)
 
 
-def visualize_pr(calculated, save_result=True, fig_prefix=''):
+def visualize_pr(calculated, save_results=True, fig_prefix=''):
+    """
+    Visualize precision and recall curves(post-training evaluation)
+    Args:
+        calculated: pandas DataFrame with combined average precisions 
+            that were calculated separately on each object class.
+        save_results: If True, plots will be saved to Output folder.
+        fig_prefix: str, prefix to add to save path.
+
+    Returns:
+        None
+    """
     for item in calculated['object_name'].drop_duplicates().values:
         plt.figure()
         title = f'{fig_prefix} Precision and recall curve for {fig_prefix} {item}'
@@ -125,35 +136,32 @@ def visualize_pr(calculated, save_result=True, fig_prefix=''):
         plt.xlabel('recall')
         plt.ylabel('precision')
         plt.title(title)
-        save_fig(title, save_result)
+        save_fig(title, save_results)
 
 
-# def plot_compare_bar(col1, col2, frame, fig_prefix=''):
-#     frame = frame.sort_values(by=col1)
-#     ind = np.arange(len(frame))
-#     width = 0.4
-#     fig, ax = plt.subplots(figsize=(9, 5))
-#     ax.barh(ind, frame[col1], width, color='blue', label=col1)
-#     ax.barh(ind + width, frame[col2], width, color='red', label=col2)
-#     ax.set(
-#         yticks=ind + width, yticklabels=frame['Class Name'],
-#         ylim=[2 * width - 1, len(frame)], title=(
-#             f'{fig_prefix} {col1} vs {col2} evaluation results'))
-#     ax.legend()
+def plot_compare_bar(col1, stats, fig_prefix='', col2=None):
+    """
+    Plot a bar chart comparison between 2 evaluation statistics or 1 statistic.
+    Args:
+        col1: column name present in frame.
+        stats: pandas DataFrame with evaluation statistics.
+        fig_prefix: str, prefix to add to save path.
+        col2: second column name present in frame to compare with col1.
 
-
-def plot_compare_bar(col1, frame, fig_prefix='', col2=None):
-    frame = frame.sort_values(by=col1)
-    ind = np.arange(len(frame))
+    Returns:
+        None
+    """
+    stats = stats.sort_values(by=col1)
+    ind = np.arange(len(stats))
     width = 0.4
     fig, ax = plt.subplots(figsize=(9, 6))
-    ax.barh(ind, frame[col1], width, color='red', label=col1)
+    ax.barh(ind, stats[col1], width, color='red', label=col1)
     if col2:
-        ax.barh(ind + width, frame[col2], width, color='blue', label=col2)
+        ax.barh(ind + width, stats[col2], width, color='blue', label=col2)
 
     ax.set(
-        yticks=ind + width, yticklabels=frame['Class Name'],
-        ylim=[2 * width - 1, len(frame)], title=(
+        yticks=ind + width, yticklabels=stats['Class Name'],
+        ylim=[2 * width - 1, len(stats)], title=(
             f'{fig_prefix} {col1} vs {col2} evaluation results' if col2 else
             f'{fig_prefix} {col1} evaluation results'
         ))
@@ -167,6 +175,17 @@ def plot_compare_bar(col1, frame, fig_prefix='', col2=None):
 
 
 def visualize_evaluation_stats(stats, fig_prefix='', save_results=True):
+    """
+    Visualize True positives vs False positives, actual vs. detections
+        and average precision.
+    Args:
+        stats: pandas DataFrame with evaluation statistics.
+        fig_prefix: str, prefix to add to save path.
+        save_results: If True, plots will be saved to Output folder.
+
+    Returns:
+        None
+    """
     plot_compare_bar('True Positives', stats, fig_prefix, 'False Positives')
     save_fig('True positives vs False positives.png', save_results)
     plot_compare_bar('Actual', stats, fig_prefix, 'Detections')

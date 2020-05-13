@@ -355,8 +355,8 @@ class DataAugment:
         current = os.path.basename(image_path)
         completed = f'{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}'
         percent = (
-            self.augmented_images
-            / (self.total_images * len(self.augmentation_sequences))
+            self.augmented_images / (
+                self.total_images * len(self.augmentation_sequences))
             * 100
         )
         print(

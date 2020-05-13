@@ -15,6 +15,11 @@ from lxml import etree
 
 
 def get_logger():
+    """
+    Initialize logger configuration.
+    Returns:
+        logger.
+    """
     formatter = logging.Formatter(
         '%(asctime)s %(name)s.%(funcName)s +%(lineno)s: '
         '%(levelname)-8s [%(process)d] %(message)s'
@@ -253,6 +258,15 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
 
 
 def add_xml_path(xml_file, path):
+    """
+    Add a path element to the xml file and save.
+    Args:
+        xml_file: .xml file path.
+        path: str, path to add.
+
+    Returns:
+        None
+    """
     tree = ElementTree.parse(xml_file)
     top = tree.getroot()
     folder_tag = tree.find('folder')
@@ -271,6 +285,17 @@ def add_xml_path(xml_file, path):
 
 
 def get_detection_data(image, image_name, outputs, class_names):
+    """
+    Organize predictions of a single image into a pandas DataFrame.
+    Args:
+        image: Image as a numpy array.
+        image_name: str, name to write in the image column.
+        outputs: Outputs from inference_model.predict()
+        class_names: A list of object class names.
+
+    Returns:
+        data: pandas DataFrame with the detections.
+    """
     nums = outputs[-1]
     boxes, scores, classes = [
         item[0][: int(nums)].numpy() for item in outputs[:-1]
@@ -301,6 +326,12 @@ def get_detection_data(image, image_name, outputs, class_names):
 
 
 def activate_gpu():
+    """
+    Check for GPU existence and if found, activate.
+
+    Returns:
+        None
+    """
     physical_devices = tf.config.experimental.list_physical_devices('GPU')
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)

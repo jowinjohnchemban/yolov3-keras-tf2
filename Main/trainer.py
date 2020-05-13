@@ -246,6 +246,24 @@ class Trainer(V3Model):
     def evaluate(self, weights_file, merge, workers, shuffle_buffer,
                  min_overlaps, display_stats=True, plot_stats=True,
                  save_figs=True):
+        """
+        Evaluate on training and validation datasets.
+        Args:
+            weights_file: Path to trained .tf file.
+            merge: If False, training and validation datasets will be evaluated separately.
+            workers: Parallel predictions.
+            shuffle_buffer: Buffer size for shuffling datasets.
+            min_overlaps: a float value between 0 and 1, or a dictionary
+                containing each class in self.class_names mapped to its
+                minimum overlap
+            display_stats: If True evaluation statistics will be printed.
+            plot_stats: If True, evaluation statistics will be plotted including
+                precision and recall curves and mAP
+            save_figs: If True, resulting plots will be save to Output folder.
+
+        Returns:
+            stats, map_score.
+        """
         default_logger.info('Starting evaluation ...')
         evaluator = Evaluator(
             self.input_shape, self.train_tf_record, self.valid_tf_record, self.classes_file,
@@ -266,19 +284,43 @@ class Trainer(V3Model):
             )
             return training_stats, training_map, valid_stats, valid_map
         actual_data = pd.read_csv(os.path.join('..', 'Output', 'full_data.csv'))
-        stats, data_map = evaluator.calculate_map(
+        stats, map_score = evaluator.calculate_map(
             predictions, actual_data, min_overlaps, display_stats, save_figs=save_figs,
             plot_results=plot_stats)
-        return stats, data_map
+        return stats, map_score
 
     @staticmethod
     def clear_outputs():
+        """
+        Clear Output folder.
+
+        Returns:
+            None
+        """
         for file_name in os.listdir(os.path.join('..', 'Output')):
-            full_path = Path(os.path.join('..', 'Output', file_name)).absolute().resolve()
-            os.remove(full_path)
-            default_logger.info(f'Deleted old output: {full_path}')
+            if not file_name.startswith('.'):
+                full_path = Path(os.path.join('..', 'Output', file_name)).absolute().resolve()
+                os.remove(full_path)
+                default_logger.info(f'Deleted old output: {full_path}')
 
     def create_new_dataset(self, new_dataset_conf):
+        """
+        Build new dataset and respective TFRecord(s).
+        Args:
+            new_dataset_conf: A dictionary containing the following keys:
+                one of the following:
+                    - relative_labels
+                    - from_xml
+                    - adjusted_frame
+                    - coordinate_labels(optional)
+                and:
+                    - sequences
+                    - workers(optional, defaults to 32)
+                    - batch_size(optional, defaults to 64)
+                    - new_size(optional, defaults to None)
+        Returns:
+            None
+        """
         default_logger.info(f'Generating new dataset ...')
         test_size = new_dataset_conf.get('test_size')
         labels_frame = self.generate_new_frame(new_dataset_conf)
@@ -291,6 +333,12 @@ class Trainer(V3Model):
         )
 
     def check_tf_records(self):
+        """
+        Ensure TFRecords are specified to start training.
+
+        Returns:
+            None
+        """
         if not self.train_tf_record:
             issue = 'No training TFRecord specified'
             default_logger.error(issue)
@@ -302,6 +350,14 @@ class Trainer(V3Model):
 
     @staticmethod
     def create_callbacks(checkpoint_name):
+        """
+        Create a list of tf.keras.callbacks.
+        Args:
+            checkpoint_name: Name under which the checkpoint is saved.
+
+        Returns:
+            callbacks.
+        """
         return [
             ReduceLROnPlateau(verbose=1),
             ModelCheckpoint(

@@ -28,6 +28,17 @@ class V3Model:
         iou_threshold=0.5,
         score_threshold=0.5,
     ):
+        """
+        Initialize yolov3 model.
+        Args:
+            input_shape: tuple(n, n, c)
+            classes: Number of classes(defaults to 80 for Coco objects)
+            anchors: numpy array of anchors (x, y) pairs
+            masks: numpy array of masks.
+            max_boxes: Maximum boxes in a single image.
+            iou_threshold: Minimum overlap that counts as a valid detection.
+            score_threshold: Minimum confidence that counts as a valid detection.
+        """
         self.current_layer = 1
         self.input_shape = input_shape
         self.classes = classes
@@ -150,6 +161,15 @@ class V3Model:
         return x
 
     def output(self, x_input, filters):
+        """
+        Output layer.
+        Args:
+            x_input: image tensor.
+            filters: number of convolution filters.
+
+        Returns:
+            tf.keras.models.Model
+        """
         x = inputs = self.apply_func(Input, shape=x_input.shape[1:])
         x = self.convolution_block(x, 2 * filters, 3, 1, True)
         x = self.convolution_block(x, 3 * (5 + self.classes), 1, 1, False)
@@ -164,6 +184,14 @@ class V3Model:
         return self.apply_func(Model, x_input, inputs, x)
 
     def get_nms(self, outputs):
+        """
+        Apply non-max suppression and get valid detections.
+        Args:
+            outputs: yolov3 model outputs.
+
+        Returns:
+            boxes, scores, classes, valid_detections
+        """
         boxes, conf, type_ = [], [], []
         for output in outputs:
             boxes.append(
@@ -207,6 +235,12 @@ class V3Model:
 
     @timer(default_logger)
     def create_models(self):
+        """
+        Create training and inference yolov3 models.
+
+        Returns:
+            training, inference models
+        """
         input_initial = self.apply_func(Input, shape=self.input_shape)
         x = self.convolution_block(input_initial, 32, 3, 1, True)
         x = self.convolution_block(x, 64, 3, 2, True)
@@ -326,6 +360,14 @@ class V3Model:
 
     @timer(default_logger)
     def load_weights(self, weights_file):
+        """
+        Load DarkNet weights or checkpoint/pre-trained weights.
+        Args:
+            weights_file: .weights or .tf file path.
+
+        Returns:
+            None
+        """
         assert weights_file.split('.')[-1] in ['tf', 'weights'], 'Invalid weights file'
         assert self.classes == 80 if weights_file.endswith('.weights') else 1, (
             f'DarkNet model should contain 80 classes, {self.classes} is given.')
