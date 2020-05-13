@@ -18,6 +18,7 @@ from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
 from Helpers.utils import calculate_loss, timer, default_logger
 from Config.augmentation_options import preset_1
+from Main.evaluator import Evaluator
 
 
 class Trainer(V3Model):
@@ -105,9 +106,7 @@ class Trainer(V3Model):
                 os.path.join('..', 'Data', 'XML Labels'),
                 os.path.join('..', 'Config', 'voc_conf.json'),
             )
-            labels_frame.to_csv(
-                '../Data/saved_labels_from_xml.csv', index=False
-            )
+            labels_frame.to_csv(os.path.join('..', 'Output', 'parsed_from_xml.csv'), index=False)
             check += 1
         if configuration.get('adjusted_frame'):
             if check:
@@ -178,12 +177,13 @@ class Trainer(V3Model):
             labels_frame = self.augment_photos(new_dataset_conf)
         return labels_frame
 
-    def initialize_dataset(self, tf_record, batch_size):
+    def initialize_dataset(self, tf_record, batch_size, shuffle_buffer=512):
         """
         Initialize and prepare TFRecord dataset for training.
         Args:
             tf_record: TFRecord file.
             batch_size: int, training batch size
+            shuffle_buffer: Buffer size for shuffling dataset.
 
         Returns:
             dataset.
@@ -191,7 +191,7 @@ class Trainer(V3Model):
         dataset = read_tfr(
             tf_record, self.classes_file, get_feature_map(), self.max_boxes
         )
-        dataset = dataset.shuffle(buffer_size=512)
+        dataset = dataset.shuffle(shuffle_buffer)
         dataset = dataset.batch(batch_size)
         dataset = dataset.map(
             lambda x, y: (
@@ -243,6 +243,30 @@ class Trainer(V3Model):
         )
 
     @timer(default_logger)
+    def evaluate(self, weights_file, merge, workers, shuffle_buffer,
+                 min_overlaps, display_stats=True):
+        default_logger.info('Starting evaluation ...')
+        evaluator = Evaluator(
+            self.input_shape, self.train_tf_record, self.valid_tf_record, self.classes_file,
+            self.anchors, self.masks, self.masks, self.iou_threshold, self.score_threshold
+        )
+        predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
+        if isinstance(predictions, tuple):
+            training_predictions, valid_predictions = predictions
+            training_actual = pd.read_csv(os.path.join('..', 'Output', 'training_data.csv'))
+            valid_actual = pd.read_csv(os.path.join('..', 'Output', 'test_data.csv'))
+            training_stats, training_map = evaluator.calculate_map(
+                training_predictions, training_actual, min_overlaps, display_stats)
+
+            valid_stats, valid_map = evaluator.calculate_map(
+                valid_predictions, valid_actual, min_overlaps, display_stats)
+            return training_stats, training_map, valid_stats, valid_map
+        actual_data = pd.read_csv(os.path.join('..', 'Output', 'full_data.csv'))
+        stats, data_map = evaluator.calculate_map(
+            predictions, actual_data, min_overlaps, display_stats)
+        return stats, data_map
+
+    @timer(default_logger)
     def train(
         self,
         epochs,
@@ -252,6 +276,12 @@ class Trainer(V3Model):
         new_dataset_conf=None,
         dataset_name=None,
         weights=None,
+        evaluate=True,
+        merge_evaluation=True,
+        evaluation_workers=8,
+        shuffle_buffer=512,
+        min_overlaps=0.5,
+        display_stats=True
     ):
         """
         Train on the dataset.
@@ -259,15 +289,24 @@ class Trainer(V3Model):
             epochs: Number of training epochs.
             batch_size: Training batch size.
             learning_rate: non-negative value.
-            new_anchors_conf: A dictionary containing the following keys anchor generation configuration.
-            new_dataset_conf: A dictionary containing the following keys dataset generation configuration.
+            new_anchors_conf: A dictionary containing anchor generation configuration.
+            new_dataset_conf: A dictionary containing dataset generation configuration.
             dataset_name: Name of the dataset for model checkpoints.
             weights: .tf or .weights file
+            evaluate: If False, the trained model will not be evaluated after training.
+            merge_evaluation: If False, training and validation maps will
+                be calculated separately.
+            evaluation_workers: Parallel predictions.
+            shuffle_buffer: Buffer size for shuffling datasets.
+            min_overlaps: a float value between 0 and 1, or a dictionary
+                containing each class in self.class_names mapped to its
+                minimum overlap
+            display_stats: If True and evaluate=True, evaluation statistics will be displayed.
 
         Returns:
-            None
+            history object, pandas DataFrame with statistics, mAP score.
         """
-        default_logger.info(f'Training started')
+        default_logger.info(f'Starting training ...')
         physical_devices = tf.config.experimental.list_physical_devices('GPU')
         if len(physical_devices) > 0:
             tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -294,10 +333,10 @@ class Trainer(V3Model):
         if not self.valid_tf_record:
             raise ValueError(f'No validation TFRecord specified')
         training_dataset = self.initialize_dataset(
-            self.train_tf_record, batch_size
+            self.train_tf_record, batch_size, shuffle_buffer
         )
         valid_dataset = self.initialize_dataset(
-            self.valid_tf_record, batch_size
+            self.valid_tf_record, batch_size, shuffle_buffer
         )
         optimizer = tf.keras.optimizers.Adam(learning_rate)
         loss = [
@@ -309,9 +348,7 @@ class Trainer(V3Model):
         callbacks = [
             ReduceLROnPlateau(verbose=1),
             ModelCheckpoint(
-                os.path.join(
-                    '/', 'content', 'drive', 'My Drive', checkpoint_name
-                ),
+                os.path.join('..', 'Models', checkpoint_name),
                 verbose=1,
                 save_weights_only=True,
             ),
@@ -324,6 +361,11 @@ class Trainer(V3Model):
             validation_data=valid_dataset,
         )
         default_logger.info('Training complete')
+        if evaluate:
+            evaluations = self.evaluate(os.path.join('..', 'Models', checkpoint_name),
+                                        merge_evaluation, evaluation_workers,
+                                        shuffle_buffer, min_overlaps, display_stats)
+            return evaluations, history
         return history
 
 

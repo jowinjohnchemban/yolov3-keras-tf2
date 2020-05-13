@@ -275,7 +275,7 @@ def get_detection_data(image, image_name, outputs, class_names):
     boxes, scores, classes = [
         item[0][: int(nums)].numpy() for item in outputs[:-1]
     ]
-    w, h = np.flip(image.shape[0:2])
+    w, h = np.flip(image.shape[0: 2])
     data = pd.DataFrame(boxes, columns=['x1', 'y1', 'x2', 'y2'])
     data[['x1', 'x2']] = (data[['x1', 'x2']] * w).astype('int64')
     data[['y1', 'y2']] = (data[['y1', 'y2']] * h).astype('int64')

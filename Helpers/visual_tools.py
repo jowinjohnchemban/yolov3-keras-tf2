@@ -1,8 +1,7 @@
-from tensorflow.keras.callbacks import Callback
-from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import numpy as np
 import imagesize
 import cv2
 import os
@@ -11,7 +10,7 @@ import sys
 
 def save_fig(title, save_figures):
     """
-    Save generated figures to Caches folder.
+    Save generated figures to Output folder.
     Args:
         title: Figure title also the image to save file name.
         save_figures: If True, figure will be saved
@@ -20,11 +19,11 @@ def save_fig(title, save_figures):
         None
     """
     if save_figures:
-        saving_path = os.path.join('..', 'Caches', f'{title}.png')
+        saving_path = os.path.join('..', 'Output', f'{title}.png')
         plt.savefig(saving_path)
 
 
-def visualize_box_relative_sizes(frame, save_result=False):
+def visualize_box_relative_sizes(frame, save_result=True):
     """
     Scatter plot annotation box relative sizes.
     Args:
@@ -35,7 +34,7 @@ def visualize_box_relative_sizes(frame, save_result=False):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
-    # if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(os.path.join('..', 'Caches')) or (
+    # if os.path.join('..', 'Output', f'{title}.png') in os.listdir(os.path.join('..', 'Output')) or (
     #         frame is None):
     #     return
     sns.scatterplot(
@@ -48,7 +47,7 @@ def visualize_box_relative_sizes(frame, save_result=False):
     save_fig(title, save_result)
 
 
-def visualize_k_means_output(centroids, frame, save_result=False):
+def visualize_k_means_output(centroids, frame, save_result=True):
     """
     Visualize centroids and anchor box dimensions calculated.
     Args:
@@ -62,8 +61,8 @@ def visualize_k_means_output(centroids, frame, save_result=False):
     title = (
         f'{centroids.shape[0]} Centroids representing relative anchor sizes.'
     )
-    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(
-        os.path.join('..', 'Caches')
+    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(
+        os.path.join('..', 'Output')
     ) or (frame is None):
         return
     fig, ax = plt.subplots()
@@ -73,7 +72,7 @@ def visualize_k_means_output(centroids, frame, save_result=False):
     save_fig(title, save_result)
 
 
-def visualize_boxes(relative_anchors, sample_image, save_result=False):
+def visualize_boxes(relative_anchors, sample_image, save_result=True):
     """
     Visualize anchor boxes output of k-means.
     Args:
@@ -85,8 +84,8 @@ def visualize_boxes(relative_anchors, sample_image, save_result=False):
         None
     """
     title = 'Generated anchors relative to sample image size'
-    if os.path.join('..', 'Caches', f'{title}.png') in os.listdir(
-        os.path.join('..', 'Caches')
+    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(
+        os.path.join('..', 'Output')
     ):
         return
     img = cv2.imread(sample_image)
@@ -106,15 +105,45 @@ def visualize_boxes(relative_anchors, sample_image, save_result=False):
     save_fig(title, save_result)
 
 
-def visualize_pr(calculated, save_result=False):
-    for item in calculated:
-        obj = item.iloc[0]["object_name"]
-        plt.plot(item['recall'], item['precision'])
+def visualize_pr(calculated, save_result=True, fig_prefix=''):
+    for item in calculated['object_name'].drop_duplicates().values:
+        plt.figure()
+        title = f'{fig_prefix} Precision and recall curve for {fig_prefix} {item}'
+        plt.title(title)
+        recall = calculated[calculated['object_name'] == item]['recall'].values
+        precision = calculated[calculated['object_name'] == item]['precision'].values
+        plt.plot(recall, precision)
         plt.xlabel('recall')
         plt.ylabel('precision')
-        title = f'Precision and recall curve for {obj}'
         plt.title(title)
         save_fig(title, save_result)
+        plt.close()
+
+
+def plot_compare_bar(col1, col2, frame, fig_prefix=''):
+    frame = frame.sort_values(by=col1)
+    ind = np.arange(len(frame))
+    width = 0.4
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.barh(ind, frame[col1], width, color='blue', label=col1)
+    ax.barh(ind + width, frame[col2], width, color='red', label=col2)
+    ax.set(
+        yticks=ind + width, yticklabels=frame['Class Name'],
+        ylim=[2 * width - 1, len(frame)], title=(
+            f'{fig_prefix} {col1} vs {col2} evaluation results'))
+    ax.legend()
+
+
+def visualize_evaluation_stats(stats, fig_prefix=''):
+    plot_compare_bar('True Positives', 'False Positives', stats, fig_prefix)
+    plt.savefig(os.path.join('..', 'Output', fig_prefix, 'True positives vs False positives.png'))
+    plt.close()
+    plot_compare_bar('Actual', 'Detections', stats, fig_prefix)
+    plt.savefig(os.path.join('..', 'Output', 'Actual vs Detections.png'))
+    plt.close()
+    stats.set_index('Class Name')['Average Precision'].sort_values().plot.barh(color='blue')
+    plt.title('Average Precision evaluation results')
+    plt.savefig(os.path.join('..', 'Output', fig_prefix, 'Average Precision.png'))
 
 
 def visualization_wrapper(to_visualize):

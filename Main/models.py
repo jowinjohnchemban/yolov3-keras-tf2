@@ -326,6 +326,9 @@ class V3Model:
 
     @timer(default_logger)
     def load_weights(self, weights_file):
+        assert weights_file.split('.')[-1] in ['tf', 'weights'], 'Invalid weights file'
+        assert self.classes == 80 if weights_file.endswith('.weights') else 1, (
+            f'DarkNet model should contain 80 classes, {self.classes} is given.')
         if weights_file.endswith('.tf'):
             self.training_model.load_weights(weights_file)
             default_logger.info(f'Loaded weights: {weights_file} ... success')

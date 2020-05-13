@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import hashlib
 import os
+from pathlib import Path
 from Helpers.utils import default_logger
 
 
@@ -188,7 +189,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     """
     Transform and save dataset into TFRecord format.
     Args:
-        data: pandas DataFrame with relative labels.
+        data: pandas DataFrame with adjusted labels.
         output_folder: Path to folder where TFRecord(s) will be saved.
         dataset_name: str name of the dataset.
         test_size: relative test subset size.
@@ -202,6 +203,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     data[data.dtypes[data.dtypes == 'int64'].index] = data[
         data.dtypes[data.dtypes == 'int64'].index
     ].apply(abs)
+    data.to_csv(os.path.join('..', 'Output', 'full_data.csv'), index=False)
     groups = np.array(data.groupby('Image Path'))
     np.random.shuffle(groups)
     if test_size:
@@ -211,10 +213,15 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
         separation_index = int((1 - test_size) * len(groups))
         training_set = groups[:separation_index]
         test_set = groups[separation_index:]
-        training_path = os.path.join(
+        training_frame = pd.concat([item[1] for item in training_set])
+        test_frame = pd.concat([item[1] for item in test_set])
+        training_frame.to_csv(os.path.join('..', 'Output', 'training_data.csv'), index=False)
+        test_frame.to_csv(os.path.join('..', 'Output', 'test_data.csv'), index=False)
+        training_path = str(Path(os.path.join(
             output_folder, f'{dataset_name}_train.tfrecord'
-        )
-        test_path = os.path.join(output_folder, f'{dataset_name}_test.tfrecord')
+        )).absolute().resolve())
+        test_path = str(Path(os.path.join(
+            output_folder, f'{dataset_name}_test.tfrecord')).absolute().resolve())
         write_tf_record(training_path, training_set, data, trainer)
         default_logger.info(f'Saved training TFRecord: {training_path}')
         write_tf_record(test_path, test_set, data, trainer)
@@ -264,7 +271,6 @@ def read_tfr(
 
 if __name__ == '__main__':
     from Helpers.annotation_parsers import adjust_non_voc_csv
-
     adj = adjust_non_voc_csv(
         '../Data/bh_labels.csv', '../../../beverly_hills/photos', 1344, 756
     )

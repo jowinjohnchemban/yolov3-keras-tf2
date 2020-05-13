@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import os
 import numpy as np
+from pathlib import Path
 from Helpers.visual_tools import visualization_wrapper
 from Helpers.utils import ratios_to_coordinates, default_logger
 
@@ -101,29 +102,28 @@ def adjust_frame(frame, cache_file=None):
         frame.loc[frame['Object Name'] == object_name, 'Object ID'] = object_id
         object_id += 1
     if cache_file:
-        frame.to_csv(os.path.join('..', 'Caches', cache_file), index=False)
+        frame.to_csv(os.path.join('..', 'Output', cache_file), index=False)
     print(f'Parsed labels:\n{frame["Object Name"].value_counts()}')
     return frame
 
 
 @visualization_wrapper
-def parse_voc_folder(folder_path, voc_conf, cache_file=None):
+def parse_voc_folder(folder_path, voc_conf):
     """
     Parse a folder containing voc xml annotation files.
     Args:
         folder_path: Folder containing voc xml annotation files.
         voc_conf: Path to voc json configuration file.
-        cache_file: csv file name containing current session labels.
 
     Returns:
         pandas DataFrame with the annotations.
     """
     assert os.path.exists(folder_path)
-    # cache_path = os.path.join('..', 'Caches', cache_file)
-    # if os.path.exists(cache_path):
-    #     frame = pd.read_csv(cache_path)
-    #     print(f'Labels retrieved from cache:\n{frame['Object Name'].value_counts()}')
-    #     return frame
+    cache_path = os.path.join('..', 'Output', 'parsed_from_xml.csv')
+    if os.path.exists(cache_path):
+        frame = pd.read_csv(cache_path)
+        print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+        return frame
     image_data = []
     frame_columns = [
         'Image Path',
@@ -154,7 +154,7 @@ def parse_voc_folder(folder_path, voc_conf, cache_file=None):
         raise ValueError(
             f'No labels were found in {os.path.abspath(folder_path)}'
         )
-    frame = adjust_frame(frame, cache_file)
+    frame = adjust_frame(frame, 'parsed_from_xml.csv')
     return frame
 
 
@@ -174,6 +174,7 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
        'Y_min', 'X_max', 'Y_max', 'Relative Width', 'Relative Height',
        'Object ID']
     """
+    image_path = Path(image_path).absolute().resolve()
     coordinates = []
     old_frame = pd.read_csv(csv_file)
     new_frame = pd.DataFrame()
