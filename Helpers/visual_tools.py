@@ -6,9 +6,14 @@ import imagesize
 import cv2
 import os
 import sys
+from pathlib import Path
+from Helpers.utils import default_logger
+
+if sys.platform == 'darwin':
+    plt.switch_backend('Qt5Agg')
 
 
-def save_fig(title, save_figures):
+def save_fig(title, save_figures=True):
     """
     Save generated figures to Output folder.
     Args:
@@ -19,8 +24,12 @@ def save_fig(title, save_figures):
         None
     """
     if save_figures:
-        saving_path = os.path.join('..', 'Output', f'{title}.png')
+        saving_path = str(Path(os.path.join('..', 'Output', f'{title}.png')).absolute().resolve())
+        if os.path.exists(saving_path):
+            return
         plt.savefig(saving_path)
+        default_logger.info(f'Saved figure {saving_path}')
+        plt.close()
 
 
 def visualize_box_relative_sizes(frame, save_result=True):
@@ -34,9 +43,9 @@ def visualize_box_relative_sizes(frame, save_result=True):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
-    # if os.path.join('..', 'Output', f'{title}.png') in os.listdir(os.path.join('..', 'Output')) or (
-    #         frame is None):
-    #     return
+    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(os.path.join('..', 'Output')) or (
+            frame is None):
+        return
     sns.scatterplot(
         x=frame['Relative Width'],
         y=frame['Relative Height'],
@@ -117,33 +126,53 @@ def visualize_pr(calculated, save_result=True, fig_prefix=''):
         plt.ylabel('precision')
         plt.title(title)
         save_fig(title, save_result)
-        plt.close()
 
 
-def plot_compare_bar(col1, col2, frame, fig_prefix=''):
+# def plot_compare_bar(col1, col2, frame, fig_prefix=''):
+#     frame = frame.sort_values(by=col1)
+#     ind = np.arange(len(frame))
+#     width = 0.4
+#     fig, ax = plt.subplots(figsize=(9, 5))
+#     ax.barh(ind, frame[col1], width, color='blue', label=col1)
+#     ax.barh(ind + width, frame[col2], width, color='red', label=col2)
+#     ax.set(
+#         yticks=ind + width, yticklabels=frame['Class Name'],
+#         ylim=[2 * width - 1, len(frame)], title=(
+#             f'{fig_prefix} {col1} vs {col2} evaluation results'))
+#     ax.legend()
+
+
+def plot_compare_bar(col1, frame, fig_prefix='', col2=None):
     frame = frame.sort_values(by=col1)
     ind = np.arange(len(frame))
     width = 0.4
-    fig, ax = plt.subplots(figsize=(9, 5))
-    ax.barh(ind, frame[col1], width, color='blue', label=col1)
-    ax.barh(ind + width, frame[col2], width, color='red', label=col2)
+    fig, ax = plt.subplots(figsize=(9, 6))
+    ax.barh(ind, frame[col1], width, color='red', label=col1)
+    if col2:
+        ax.barh(ind + width, frame[col2], width, color='blue', label=col2)
+
     ax.set(
         yticks=ind + width, yticklabels=frame['Class Name'],
         ylim=[2 * width - 1, len(frame)], title=(
-            f'{fig_prefix} {col1} vs {col2} evaluation results'))
-    ax.legend()
+            f'{fig_prefix} {col1} vs {col2} evaluation results' if col2 else
+            f'{fig_prefix} {col1} evaluation results'
+        ))
+    for patch in ax.patches:
+        pw = patch.get_width()
+        _, y = patch.get_xy()
+        color = patch.get_facecolor()
+        ax.text(pw + 3, y + width/2, str(pw),
+                color=color, verticalalignment='center')
+    ax.legend(loc='lower right')
 
 
-def visualize_evaluation_stats(stats, fig_prefix=''):
-    plot_compare_bar('True Positives', 'False Positives', stats, fig_prefix)
-    plt.savefig(os.path.join('..', 'Output', fig_prefix, 'True positives vs False positives.png'))
-    plt.close()
-    plot_compare_bar('Actual', 'Detections', stats, fig_prefix)
-    plt.savefig(os.path.join('..', 'Output', 'Actual vs Detections.png'))
-    plt.close()
-    stats.set_index('Class Name')['Average Precision'].sort_values().plot.barh(color='blue')
-    plt.title('Average Precision evaluation results')
-    plt.savefig(os.path.join('..', 'Output', fig_prefix, 'Average Precision.png'))
+def visualize_evaluation_stats(stats, fig_prefix='', save_results=True):
+    plot_compare_bar('True Positives', stats, fig_prefix, 'False Positives')
+    save_fig('True positives vs False positives.png', save_results)
+    plot_compare_bar('Actual', stats, fig_prefix, 'Detections')
+    save_fig('Actual vs Detections.png', save_results)
+    plot_compare_bar('Average Precision', stats, fig_prefix)
+    save_fig(f'{fig_prefix} Average Precision.png', save_results)
 
 
 def visualization_wrapper(to_visualize):
@@ -155,9 +184,6 @@ def visualization_wrapper(to_visualize):
     Returns:
         to_visualize
     """
-    if sys.platform == 'darwin':
-        plt.switch_backend('Qt5Agg')
-
     def visualized(*args, **kwargs):
         result = to_visualize(*args, **kwargs)
         if to_visualize.__name__ in ['parse_voc_folder', 'adjust_non_voc_csv']:
@@ -169,7 +195,7 @@ def visualization_wrapper(to_visualize):
                 return result
             visualize_k_means_output(*result)
             plt.show()
-            visualize_boxes(result[0], '../sample_image.png')
+            visualize_boxes(result[0], os.path.join('..', 'sample_image.png'))
             plt.show()
         return result
     return visualized

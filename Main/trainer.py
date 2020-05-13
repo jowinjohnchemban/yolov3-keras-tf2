@@ -16,7 +16,7 @@ from Config.augmentation_options import augmentations
 from Main.models import V3Model
 from Helpers.utils import transform_images, transform_targets
 from Helpers.annotation_parsers import adjust_non_voc_csv
-from Helpers.utils import calculate_loss, timer, default_logger
+from Helpers.utils import calculate_loss, timer, default_logger, activate_gpu
 from Config.augmentation_options import preset_1
 from Main.evaluator import Evaluator
 
@@ -244,7 +244,8 @@ class Trainer(V3Model):
 
     @timer(default_logger)
     def evaluate(self, weights_file, merge, workers, shuffle_buffer,
-                 min_overlaps, display_stats=True):
+                 min_overlaps, display_stats=True, plot_stats=True,
+                 save_figs=True):
         default_logger.info('Starting evaluation ...')
         evaluator = Evaluator(
             self.input_shape, self.train_tf_record, self.valid_tf_record, self.classes_file,
@@ -256,15 +257,60 @@ class Trainer(V3Model):
             training_actual = pd.read_csv(os.path.join('..', 'Output', 'training_data.csv'))
             valid_actual = pd.read_csv(os.path.join('..', 'Output', 'test_data.csv'))
             training_stats, training_map = evaluator.calculate_map(
-                training_predictions, training_actual, min_overlaps, display_stats)
-
+                training_predictions, training_actual, min_overlaps, display_stats, 'Train',
+                save_figs, plot_stats
+            )
             valid_stats, valid_map = evaluator.calculate_map(
-                valid_predictions, valid_actual, min_overlaps, display_stats)
+                valid_predictions, valid_actual, min_overlaps, display_stats,
+                'Valid', save_figs, plot_stats
+            )
             return training_stats, training_map, valid_stats, valid_map
         actual_data = pd.read_csv(os.path.join('..', 'Output', 'full_data.csv'))
         stats, data_map = evaluator.calculate_map(
-            predictions, actual_data, min_overlaps, display_stats)
+            predictions, actual_data, min_overlaps, display_stats, save_figs=save_figs,
+            plot_results=plot_stats)
         return stats, data_map
+
+    @staticmethod
+    def clear_outputs():
+        for file_name in os.listdir(os.path.join('..', 'Output')):
+            full_path = Path(os.path.join('..', 'Output', file_name)).absolute().resolve()
+            os.remove(full_path)
+            default_logger.info(f'Deleted old output: {full_path}')
+
+    def create_new_dataset(self, new_dataset_conf):
+        default_logger.info(f'Generating new dataset ...')
+        test_size = new_dataset_conf.get('test_size')
+        labels_frame = self.generate_new_frame(new_dataset_conf)
+        save_tfr(
+            labels_frame,
+            os.path.join('..', 'Data', 'TFRecords'),
+            new_dataset_conf['dataset_name'],
+            test_size,
+            self,
+        )
+
+    def check_tf_records(self):
+        if not self.train_tf_record:
+            issue = 'No training TFRecord specified'
+            default_logger.error(issue)
+            raise ValueError(issue)
+        if not self.valid_tf_record:
+            issue = 'No validation TFRecord specified'
+            default_logger.error(issue)
+            raise ValueError(issue)
+
+    @staticmethod
+    def create_callbacks(checkpoint_name):
+        return [
+            ReduceLROnPlateau(verbose=1),
+            ModelCheckpoint(
+                os.path.join('..', 'Models', checkpoint_name),
+                verbose=1,
+                save_weights_only=True,
+            ),
+            TensorBoard(log_dir=os.path.join('..', 'Logs')),
+        ]
 
     @timer(default_logger)
     def train(
@@ -281,7 +327,9 @@ class Trainer(V3Model):
         evaluation_workers=8,
         shuffle_buffer=512,
         min_overlaps=0.5,
-        display_stats=True
+        display_stats=True,
+        plot_stats=True,
+        save_figs=True
     ):
         """
         Train on the dataset.
@@ -302,36 +350,25 @@ class Trainer(V3Model):
                 containing each class in self.class_names mapped to its
                 minimum overlap
             display_stats: If True and evaluate=True, evaluation statistics will be displayed.
+            plot_stats: If True, Precision and recall curves as well as
+                comparative bar charts will be plotted
+            save_figs: If True and plot_stats=True, figures will be saved
 
         Returns:
             history object, pandas DataFrame with statistics, mAP score.
         """
+        self.clear_outputs()
+        activate_gpu()
         default_logger.info(f'Starting training ...')
-        physical_devices = tf.config.experimental.list_physical_devices('GPU')
-        if len(physical_devices) > 0:
-            tf.config.experimental.set_memory_growth(physical_devices[0], True)
-            default_logger.info('GPU activated')
         if new_anchors_conf:
-            print(f'Generating new anchors ...')
+            default_logger.info(f'Generating new anchors ...')
             self.generate_new_anchors(new_anchors_conf)
         self.create_models()
         if weights:
             self.load_weights(weights)
         if new_dataset_conf:
-            print(f'Generating new dataset ...')
-            test_size = new_dataset_conf.get('test_size')
-            labels_frame = self.generate_new_frame(new_dataset_conf)
-            save_tfr(
-                labels_frame,
-                os.path.join('..', 'Data', 'TFRecords'),
-                new_dataset_conf['dataset_name'],
-                test_size,
-                self,
-            )
-        if not self.train_tf_record:
-            raise ValueError(f'No training TFRecord specified')
-        if not self.valid_tf_record:
-            raise ValueError(f'No validation TFRecord specified')
+            self.create_new_dataset(new_dataset_conf)
+        self.check_tf_records()
         training_dataset = self.initialize_dataset(
             self.train_tf_record, batch_size, shuffle_buffer
         )
@@ -344,16 +381,8 @@ class Trainer(V3Model):
             for mask in self.masks
         ]
         self.training_model.compile(optimizer=optimizer, loss=loss)
-        checkpoint_name = f'{dataset_name or "trained"}_model2.tf'
-        callbacks = [
-            ReduceLROnPlateau(verbose=1),
-            ModelCheckpoint(
-                os.path.join('..', 'Models', checkpoint_name),
-                verbose=1,
-                save_weights_only=True,
-            ),
-            TensorBoard(log_dir=os.path.join('..', 'Logs')),
-        ]
+        checkpoint_name = f'{dataset_name or "trained"}_model.tf'
+        callbacks = self.create_callbacks(checkpoint_name)
         history = self.training_model.fit(
             training_dataset,
             epochs=epochs,
@@ -364,7 +393,8 @@ class Trainer(V3Model):
         if evaluate:
             evaluations = self.evaluate(os.path.join('..', 'Models', checkpoint_name),
                                         merge_evaluation, evaluation_workers,
-                                        shuffle_buffer, min_overlaps, display_stats)
+                                        shuffle_buffer, min_overlaps, display_stats,
+                                        plot_stats, save_figs)
             return evaluations, history
         return history
 

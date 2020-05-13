@@ -334,7 +334,7 @@ class V3Model:
             default_logger.info(f'Loaded weights: {weights_file} ... success')
             return
         with open(weights_file, 'rb') as weights_data:
-            print(f'Loading pre-trained weights ...')
+            default_logger.info(f'Loading pre-trained weights ...')
             major, minor, revision, seen, _ = np.fromfile(
                 weights_data, dtype=np.int32, count=5
             )
