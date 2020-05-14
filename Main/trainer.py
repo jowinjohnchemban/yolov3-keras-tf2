@@ -265,10 +265,18 @@ class Trainer(V3Model):
             stats, map_score.
         """
         default_logger.info('Starting evaluation ...')
-        evaluator = Evaluator(
-            self.input_shape, self.train_tf_record, self.valid_tf_record, self.classes_file,
-            self.anchors, self.masks, self.masks, self.iou_threshold, self.score_threshold
-        )
+        print(f'input shape: {self.input_shape}')
+        print(f'train_tfrecord: {self.train_tf_record}')
+        print(f'valid_tfrecord: {self.valid_tf_record}')
+        print(f'classes file: {self.classes_file}')
+        print(f'anchors: {self.anchors}')
+        print(f'masks {self.masks}')
+        print(f'max_boxes: {self.max_boxes}')
+        print(f'iou threshold: {self.iou_threshold}')
+        print(f'score_threshold: {self.score_threshold}')
+        evaluator = Evaluator(self.input_shape, self.train_tf_record, self.valid_tf_record,
+                              self.classes_file, self.anchors, self.masks, self.max_boxes,
+                              self.iou_threshold, self.score_threshold)
         predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
         if isinstance(predictions, tuple):
             training_predictions, valid_predictions = predictions
@@ -385,7 +393,8 @@ class Trainer(V3Model):
         min_overlaps=0.5,
         display_stats=True,
         plot_stats=True,
-        save_figs=True
+        save_figs=True,
+        clear_outputs=True
     ):
         """
         Train on the dataset.
@@ -409,11 +418,13 @@ class Trainer(V3Model):
             plot_stats: If True, Precision and recall curves as well as
                 comparative bar charts will be plotted
             save_figs: If True and plot_stats=True, figures will be saved
+            clear_outputs: If True, old outputs will be cleared
 
         Returns:
             history object, pandas DataFrame with statistics, mAP score.
         """
-        self.clear_outputs()
+        if clear_outputs:
+            self.clear_outputs()
         activate_gpu()
         default_logger.info(f'Starting training ...')
         if new_anchors_conf:
@@ -452,6 +463,15 @@ class Trainer(V3Model):
                                         shuffle_buffer, min_overlaps, display_stats,
                                         plot_stats, save_figs)
             return evaluations, history
+            # evaluator = Evaluator((416, 416, 3),
+            #                       '../Data/TFRecords/beverly_hills_train.tfrecord',
+            #                       '../Data/TFRecords/beverly_hills_test.tfrecord',
+            #                       '../Config/beverly_hills.txt',
+            #                       anc)
+            # predictions = evaluator.make_predictions(
+            #     '../Models/beverly_hills_model.tf',
+            #     merge=True, workers=8, shuffle_buffer=512)
+            # print(predictions)
         return history
 
 
@@ -475,14 +495,14 @@ if __name__ == '__main__':
         1344,
         756,
         anchors=anc,
-        train_tf_record='/content/drive/My Drive/beverly_hills_train.tfrecord',
-        valid_tf_record='/content/drive/My Drive/beverly_hills_test.tfrecord',
+        train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
+        valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord',
     )
     dt = {
         'relative_labels': '../Data/bh_labels.csv',
         'dataset_name': 'beverly_hills',
         'test_size': 0.2,
         'sequences': preset_1,
-        'augmentation': True,
+        'augmentation': False,
     }
-    tr.train(150, 8, 1e-3, dataset_name='beverly_hills')
+    tr.train(1, 8, 1e-3, dataset_name='beverly_hills', clear_outputs=False)

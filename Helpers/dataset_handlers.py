@@ -255,6 +255,7 @@ def read_tfr(
     Returns:
         MapDataset object.
     """
+    tf_record_file = str(Path(tf_record_file).absolute().resolve())
     text_init = tf.lookup.TextFileInitializer(
         classes_file, tf.string, 0, tf.int64, -1, delimiter=classes_delimiter
     )

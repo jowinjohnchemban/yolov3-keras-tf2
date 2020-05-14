@@ -76,7 +76,7 @@ class Evaluator(V3Model):
         image_name = os.path.basename(image_path)
         image = tf.expand_dims(image_data, 0)
         resized = transform_images(image, 416)
-        outs = self.inference_model.predict(resized)
+        outs = self.inference_model(resized)
         adjusted = cv2.cvtColor(image_data.numpy(), cv2.COLOR_RGB2BGR)
         return (
             get_detection_data(adjusted, image_name, outs, self.class_names),
@@ -210,7 +210,6 @@ class Evaluator(V3Model):
         actual = actual.rename(
             columns={'Image Path': 'image', 'Object Name': 'object_name'}
         )
-        actual['image'] = actual['image'].apply(lambda name: os.path.split(name)[-1])
         random_gen = np.random.default_rng()
         if 'detection_key' not in detections.columns:
             detection_keys = random_gen.choice(
@@ -389,14 +388,14 @@ class Evaluator(V3Model):
 
     @timer(default_logger)
     def calculate_map(
-        self, prediction_file, actual_file, min_overlaps, display_stats=False, fig_prefix='',
+        self, prediction_data, actual_data, min_overlaps, display_stats=False, fig_prefix='',
             save_figs=True, plot_results=True
     ):
         """
         Calculate mAP(mean average precision) for the trained model.
         Args:
-            prediction_file: .csv file containing prediction data.
-            actual_file: .csv file containing actual data.
+            prediction_data: pandas DataFrame containing predictions.
+            actual_data: pandas DataFrame containing actual data.
             min_overlaps: a float value between 0 and 1, or a dictionary
                 containing each class in self.class_names mapped to its
                 minimum overlap
@@ -408,22 +407,23 @@ class Evaluator(V3Model):
         Returns:
             pandas DataFrame with statistics, mAP score.
         """
-        detection_data = pd.read_csv(prediction_file)
-        width, height = detection_data.iloc[0][['image_width', 'image_height']]
-        actual_data = adjust_non_voc_csv(actual_file, '', width, height)
+        actual_data['Object Name'] = actual_data['Object Name'].apply(
+            lambda x: x.replace("b'", '').replace("'", '')
+        )
         class_counts = actual_data['Object Name'].value_counts().to_dict()
         true_positives = self.get_true_positives(
-            detection_data, actual_data, min_overlaps
+            prediction_data, actual_data, min_overlaps
         )
         false_positives = self.get_false_positives(
-            detection_data, true_positives
+            prediction_data, true_positives
         )
         combined = self.combine_results(true_positives, false_positives)
         class_groups = combined.groupby('object_name')
-        calculated = pd.concat([self.calculate_ap(group, class_counts.get(object_name))
-                                for object_name, group in class_groups])
+        calculated = pd.concat(
+            [self.calculate_ap(group, class_counts.get(object_name))
+             for object_name, group in class_groups])
         stats = self.calculate_stats(
-                actual_data, detection_data, true_positives, false_positives, calculated)
+                actual_data, prediction_data, true_positives, false_positives, calculated)
         map_score = stats['Average Precision'].mean()
         if display_stats:
             pd.set_option('display.max_rows', None,
@@ -454,12 +454,12 @@ if __name__ == '__main__':
     )
     ev = Evaluator(
         (416, 416, 3),
-        '../../bhills_train.tfrecord',
-        '../../bhills_test.tfrecord',
+        '../Data/TFRecords/beverly_hills_train.tfrecord',
+        '../Data/TFRecords/beverly_hills_test.tfrecord',
         '../Config/beverly_hills.txt',
         anc,
     )
-    # ev.make_predictions('../../../beverly_hills/models/beverly_hills_model.tf', merge=True)
+    ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
     ovs = {
         'Car': 0.55,
         'Street Sign': 0.5,
