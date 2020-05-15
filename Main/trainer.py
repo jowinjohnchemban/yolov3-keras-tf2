@@ -3,11 +3,16 @@ import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import sys
+sys.path.append('..')
 from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
     ModelCheckpoint,
+    Callback,
+    EarlyStopping
 )
+import shutil
 from Helpers.dataset_handlers import read_tfr, save_tfr, get_feature_map
 from Helpers.annotation_parsers import parse_voc_folder
 from Helpers.anchors import k_means, generate_anchors
@@ -265,21 +270,15 @@ class Trainer(V3Model):
             stats, map_score.
         """
         default_logger.info('Starting evaluation ...')
-        print(f'input shape: {self.input_shape}')
-        print(f'train_tfrecord: {self.train_tf_record}')
-        print(f'valid_tfrecord: {self.valid_tf_record}')
-        print(f'classes file: {self.classes_file}')
-        print(f'anchors: {self.anchors}')
-        print(f'masks {self.masks}')
-        print(f'max_boxes: {self.max_boxes}')
-        print(f'iou threshold: {self.iou_threshold}')
-        print(f'score_threshold: {self.score_threshold}')
         evaluator = Evaluator(self.input_shape, self.train_tf_record, self.valid_tf_record,
                               self.classes_file, self.anchors, self.masks, self.max_boxes,
                               self.iou_threshold, self.score_threshold)
         predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
         if isinstance(predictions, tuple):
             training_predictions, valid_predictions = predictions
+            if any([training_predictions.empty, valid_predictions.empty]):
+                default_logger.info('Aborting evaluations, no detections found')
+                return
             training_actual = pd.read_csv(os.path.join('..', 'Output', 'training_data.csv'))
             valid_actual = pd.read_csv(os.path.join('..', 'Output', 'test_data.csv'))
             training_stats, training_map = evaluator.calculate_map(
@@ -292,6 +291,9 @@ class Trainer(V3Model):
             )
             return training_stats, training_map, valid_stats, valid_map
         actual_data = pd.read_csv(os.path.join('..', 'Output', 'full_data.csv'))
+        if predictions.empty:
+            default_logger.info('Aborting evaluations, no detections found')
+            return
         stats, map_score = evaluator.calculate_map(
             predictions, actual_data, min_overlaps, display_stats, save_figs=save_figs,
             plot_results=plot_stats)
@@ -308,7 +310,10 @@ class Trainer(V3Model):
         for file_name in os.listdir(os.path.join('..', 'Output')):
             if not file_name.startswith('.'):
                 full_path = Path(os.path.join('..', 'Output', file_name)).absolute().resolve()
-                os.remove(full_path)
+                if os.path.isdir(full_path):
+                    shutil.rmtree(full_path)
+                else:
+                    os.remove(full_path)
                 default_logger.info(f'Deleted old output: {full_path}')
 
     def create_new_dataset(self, new_dataset_conf):
@@ -374,6 +379,7 @@ class Trainer(V3Model):
                 save_weights_only=True,
             ),
             TensorBoard(log_dir=os.path.join('..', 'Logs')),
+            EarlyStopping(monitor='val_loss', patience=3, verbose=1)
         ]
 
     @timer(default_logger)
@@ -394,7 +400,8 @@ class Trainer(V3Model):
         display_stats=True,
         plot_stats=True,
         save_figs=True,
-        clear_outputs=True
+        clear_outputs=False,
+        n_epoch_eval=None
     ):
         """
         Train on the dataset.
@@ -419,6 +426,7 @@ class Trainer(V3Model):
                 comparative bar charts will be plotted
             save_figs: If True and plot_stats=True, figures will be saved
             clear_outputs: If True, old outputs will be cleared
+            n_epoch_eval: Conduct evaluation every n epoch.
 
         Returns:
             history object, pandas DataFrame with statistics, mAP score.
@@ -448,8 +456,16 @@ class Trainer(V3Model):
             for mask in self.masks
         ]
         self.training_model.compile(optimizer=optimizer, loss=loss)
-        checkpoint_name = f'{dataset_name or "trained"}_model.tf'
+        checkpoint_name = os.path.join('..', 'Models', f'{dataset_name or "trained"}_model.tf')
         callbacks = self.create_callbacks(checkpoint_name)
+        if n_epoch_eval:
+            mid_train_eval = MidTrainingEvaluator(
+                self.input_shape, self.classes_file, self.image_width, self.image_height,
+                self.train_tf_record, self.valid_tf_record, self.anchors, self.masks,
+                self.max_boxes, self.iou_threshold, self.score_threshold, n_epoch_eval,
+                merge_evaluation, evaluation_workers, shuffle_buffer, min_overlaps, display_stats,
+                plot_stats, save_figs, checkpoint_name)
+            callbacks.append(mid_train_eval)
         history = self.training_model.fit(
             training_dataset,
             epochs=epochs,
@@ -458,21 +474,40 @@ class Trainer(V3Model):
         )
         default_logger.info('Training complete')
         if evaluate:
-            evaluations = self.evaluate(os.path.join('..', 'Models', checkpoint_name),
+            evaluations = self.evaluate(checkpoint_name,
                                         merge_evaluation, evaluation_workers,
                                         shuffle_buffer, min_overlaps, display_stats,
                                         plot_stats, save_figs)
             return evaluations, history
-            # evaluator = Evaluator((416, 416, 3),
-            #                       '../Data/TFRecords/beverly_hills_train.tfrecord',
-            #                       '../Data/TFRecords/beverly_hills_test.tfrecord',
-            #                       '../Config/beverly_hills.txt',
-            #                       anc)
-            # predictions = evaluator.make_predictions(
-            #     '../Models/beverly_hills_model.tf',
-            #     merge=True, workers=8, shuffle_buffer=512)
-            # print(predictions)
         return history
+
+
+class MidTrainingEvaluator(Callback, Trainer):
+    def __init__(
+            self, input_shape, classes_file, image_width, image_height,
+            train_tf_record, valid_tf_record, anchors, masks,
+            max_boxes, iou_threshold, score_threshold, n_epochs, merge,
+            workers, shuffle_buffer, min_overlaps, display_stats, plot_stats, save_figs,
+            weights_file
+    ):
+        Trainer.__init__(self, input_shape, classes_file, image_width, image_height,
+                         train_tf_record, valid_tf_record, anchors, masks,
+                         max_boxes, iou_threshold, score_threshold)
+        self.n_epochs = n_epochs
+        self.evaluation_args = [weights_file, merge, workers, shuffle_buffer, min_overlaps,
+                                display_stats, plot_stats, save_figs]
+
+    def on_epoch_end(self, epoch, logs=None):
+        if not (epoch + 1) % self.n_epochs == 0:
+            return
+        self.evaluate(*self.evaluation_args)
+        os.mkdir(os.path.join('..', 'Output', f'epoch-{epoch}-evaluation'))
+        for file_name in os.listdir(os.path.join('..', 'Output')):
+            if not os.path.isdir(file_name) and (file_name.endswith('.png') or 'prediction' in file_name):
+                full_path = str(Path(os.path.join('..', 'Output', file_name)).absolute().resolve())
+                new_path = str(Path(os.path.join(
+                    '..', 'Output', f'epoch-{epoch}-evaluation', file_name)).absolute().resolve())
+                shutil.move(full_path, new_path)
 
 
 if __name__ == '__main__':
@@ -505,4 +540,5 @@ if __name__ == '__main__':
         'sequences': preset_1,
         'augmentation': False,
     }
-    tr.train(1, 8, 1e-3, dataset_name='beverly_hills', clear_outputs=False)
+    tr.train(100, 8, 1e-4, dataset_name='beverly_hills', new_dataset_conf=dt,
+             n_epoch_eval=15, merge_evaluation=False)

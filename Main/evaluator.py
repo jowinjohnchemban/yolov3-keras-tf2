@@ -479,11 +479,11 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    actual = pd.read_csv('../out/2/Output/full_data.csv')
-    preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
-    print(actual)
-    print(preds)
-    ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
+    # actual = pd.read_csv('../out/2/Output/full_data.csv')
+    # preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
+    # print(actual)
+    # print(preds)
+    # ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
 
 
 
