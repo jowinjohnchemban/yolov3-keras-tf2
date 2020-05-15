@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from Main.models import V3Model
 from Helpers.dataset_handlers import read_tfr, get_feature_map
 from Helpers.utils import transform_images, get_detection_data, default_logger, timer
-from Helpers.annotation_parsers import adjust_non_voc_csv
 from Helpers.visual_tools import visualize_pr, visualize_evaluation_stats
 
 
@@ -210,6 +209,7 @@ class Evaluator(V3Model):
         actual = actual.rename(
             columns={'Image Path': 'image', 'Object Name': 'object_name'}
         )
+        actual['image'] = actual['image'].apply(lambda x: os.path.split(x)[-1])
         random_gen = np.random.default_rng()
         if 'detection_key' not in detections.columns:
             detection_keys = random_gen.choice(
@@ -217,6 +217,8 @@ class Evaluator(V3Model):
             )
             detections['detection_key'] = detection_keys
         total_frame = actual.merge(detections, on=['image', 'object_name'])
+        assert not total_frame.empty, (
+            'No common image names found between actual and detections')
         total_frame['x_max_common'] = total_frame[['X_max', 'x2']].min(1)
         total_frame['x_min_common'] = total_frame[['X_min', 'x1']].max(1)
         total_frame['y_max_common'] = total_frame[['Y_max', 'y2']].min(1)
@@ -454,12 +456,11 @@ if __name__ == '__main__':
     )
     ev = Evaluator(
         (416, 416, 3),
-        '../Data/TFRecords/beverly_hills_train.tfrecord',
-        '../Data/TFRecords/beverly_hills_test.tfrecord',
-        '../Config/beverly_hills.txt',
-        anc,
+        '../../bhills_train.tfrecord',
+        '../../bhills_test.tfrecord',
+        '../Config/beverly_hills.txt'
     )
-    ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
+    # ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
     ovs = {
         'Car': 0.55,
         'Street Sign': 0.5,
@@ -478,9 +479,11 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    ev.calculate_map(
-        '../Output/full_dataset_predictions.csv',
-        '../Data/bh_labels.csv',
-        min_overlaps=ovs,
-        display_stats=True,
-    )
+    actual = pd.read_csv('../out/2/Output/full_data.csv')
+    preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
+    print(actual)
+    print(preds)
+    ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
+
+
+

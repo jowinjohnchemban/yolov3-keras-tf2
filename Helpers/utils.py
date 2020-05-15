@@ -336,3 +336,44 @@ def activate_gpu():
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
         default_logger.info('GPU activated')
+
+
+def calculate_ratios(x1, y1, x2, y2, width, height):
+    """
+    Calculate relative object ratios in the labeled image.
+    Args:
+        x1: Start x coordinate.
+        y1: Start y coordinate.
+        x2: End x coordinate.
+        y2: End y coordinate.
+        width: Bounding box width.
+        height: Bounding box height.
+
+    Return:
+        bx: Relative center x coordinate.
+        by: Relative center y coordinate.
+        bw: Relative box width.
+        bh: Relative box height.
+    """
+    box_width = abs(x2 - x1)
+    box_height = abs(y2 - y1)
+    bx = 1 - ((width - min(x1, x2) + (box_width / 2)) / width)
+    by = 1 - ((height - min(y1, y2) + (box_height / 2)) / height)
+    bw = box_width / width
+    bh = box_height / height
+    return bx, by, bw, bh
+
+
+def calculate_display_data(prediciton_file, classes_file, img_width, img_height, out):
+    preds = pd.read_csv(prediciton_file)
+    rows = []
+    indices = {item: ind for ind, item in enumerate([item.strip() for item in open(
+        classes_file).readlines()])}
+    print(preds.columns)
+    for ind, item in preds.iterrows():
+        img, obj, xx1, yy1, xx2, yy2, score, imgw, imgh, dk = item.values
+        bxx, byy, bww, bhh = calculate_ratios(xx1, yy1, xx2, yy2, img_width, img_height)
+        rows.append([img, obj, indices[obj], bxx, byy, bww, bhh])
+    fr = pd.DataFrame(rows, columns=[
+        'Image', 'Object Name', 'Object Index', 'bx', 'by', 'bw', 'bh'])
+    fr.to_csv(out, index=False)
