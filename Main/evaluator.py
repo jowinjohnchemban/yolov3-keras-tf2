@@ -103,8 +103,7 @@ class Evaluator(V3Model):
             }
             for future_prediction in as_completed(future_predictions):
                 result, completed_image = future_prediction.result()
-                if not result.empty:
-                    predictions.append(result)
+                predictions.append(result)
                 completed = f'{self.predicted}/{self.dataset_size}'
                 percent = (self.predicted / self.dataset_size) * 100
                 print(
@@ -112,14 +111,6 @@ class Evaluator(V3Model):
                     end='',
                 )
                 self.predicted += 1
-        # pd.set_option('display.max_rows', None,
-        #               'display.max_columns', None,
-        #               'display.width', None)
-        # pd.set_option('display.max_rows', None,
-        #               'display.max_columns', None,
-        #               'display.width', None)
-        # import pdb
-        # pdb.set_trace()
         return pd.concat(predictions)
 
     @timer(default_logger)

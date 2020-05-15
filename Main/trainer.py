@@ -382,7 +382,7 @@ class Trainer(V3Model):
         return [
             ReduceLROnPlateau(verbose=1),
             ModelCheckpoint(
-                os.path.join('..', 'Models', checkpoint_name),
+                os.path.join(checkpoint_name),
                 verbose=1,
                 save_weights_only=True,
             ),
@@ -404,7 +404,7 @@ class Trainer(V3Model):
         merge_evaluation=True,
         evaluation_workers=8,
         shuffle_buffer=512,
-        min_overlaps=0.5,
+        min_overlaps=None,
         display_stats=True,
         plot_stats=True,
         save_figs=True,
@@ -439,6 +439,7 @@ class Trainer(V3Model):
         Returns:
             history object, pandas DataFrame with statistics, mAP score.
         """
+        min_overlaps = min_overlaps or 0.5
         if clear_outputs:
             self.clear_outputs()
         activate_gpu()
@@ -540,6 +541,7 @@ if __name__ == '__main__':
         anchors=anc,
         train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
         valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord',
+        score_threshold=0.1
     )
     dt = {
         'relative_labels': '../Data/bh_labels.csv',
@@ -548,5 +550,24 @@ if __name__ == '__main__':
         'sequences': preset_1,
         'augmentation': False,
     }
-    tr.train(150, 8, 1e-3, dataset_name='beverly_hills',
-             n_epoch_eval=1, merge_evaluation=False, weights='../Models/beverly_hills_model.tf')
+    ovs = {
+        'Car': 0.55,
+        'Street Sign': 0.5,
+        'Palm Tree': 0.5,
+        'Street Lamp': 0.5,
+        'Minivan': 0.5,
+        'Traffic Lights': 0.5,
+        'Pedestrian': 0.5,
+        'Fire Hydrant': 0.5,
+        'Flag': 0.5,
+        'Trash Can': 0.5,
+        'Bicycle': 0.5,
+        'Bus': 0.5,
+        'Pickup Truck': 0.5,
+        'Road Block': 0.5,
+        'Delivery Truck': 0.5,
+        'Motorcycle': 0.5,
+    }
+    tr.train(150, 4, 1e-4, dataset_name='beverly_hills',
+             n_epoch_eval=10, new_dataset_conf=dt, merge_evaluation=True, min_overlaps=ovs,
+             clear_outputs=True)
