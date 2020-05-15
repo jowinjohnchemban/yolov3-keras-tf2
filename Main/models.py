@@ -58,7 +58,8 @@ class V3Model:
                 ],
                 np.float32,
             )
-        self.anchors = self.anchors / input_shape[0]
+        if self.anchors[0][0] > 1:
+            self.anchors = self.anchors / input_shape[0]
         self.masks = masks
         if masks is None:
             self.masks = np.array([[6, 7, 8], [3, 4, 5], [0, 1, 2]])

@@ -273,6 +273,14 @@ class Trainer(V3Model):
         evaluator = Evaluator(self.input_shape, self.train_tf_record, self.valid_tf_record,
                               self.classes_file, self.anchors, self.masks, self.max_boxes,
                               self.iou_threshold, self.score_threshold)
+        # ev = Evaluator(
+        #     (416, 416, 3),
+        #     '../Data/TFRecords/beverly_hills_train.tfrecord',
+        #     '../Data/TFRecords/beverly_hills_test.tfrecord',
+        #     '../Config/beverly_hills.txt'
+        # )
+        # import pdb
+        # pdb.set_trace()
         predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
         if isinstance(predictions, tuple):
             training_predictions, valid_predictions = predictions
@@ -540,5 +548,5 @@ if __name__ == '__main__':
         'sequences': preset_1,
         'augmentation': False,
     }
-    tr.train(100, 8, 1e-4, dataset_name='beverly_hills', new_dataset_conf=dt,
-             n_epoch_eval=15, merge_evaluation=False)
+    tr.train(150, 8, 1e-3, dataset_name='beverly_hills',
+             n_epoch_eval=1, merge_evaluation=False, weights='../Models/beverly_hills_model.tf')

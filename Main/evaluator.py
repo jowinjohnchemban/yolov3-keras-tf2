@@ -77,10 +77,11 @@ class Evaluator(V3Model):
         resized = transform_images(image, 416)
         outs = self.inference_model(resized)
         adjusted = cv2.cvtColor(image_data.numpy(), cv2.COLOR_RGB2BGR)
-        return (
+        result = (
             get_detection_data(adjusted, image_name, outs, self.class_names),
             image_name,
         )
+        return result
 
     def predict_dataset(self, dataset, workers=16):
         """
@@ -102,7 +103,8 @@ class Evaluator(V3Model):
             }
             for future_prediction in as_completed(future_predictions):
                 result, completed_image = future_prediction.result()
-                predictions.append(result)
+                if not result.empty:
+                    predictions.append(result)
                 completed = f'{self.predicted}/{self.dataset_size}'
                 percent = (self.predicted / self.dataset_size) * 100
                 print(
@@ -110,6 +112,14 @@ class Evaluator(V3Model):
                     end='',
                 )
                 self.predicted += 1
+        # pd.set_option('display.max_rows', None,
+        #               'display.max_columns', None,
+        #               'display.width', None)
+        # pd.set_option('display.max_rows', None,
+        #               'display.max_columns', None,
+        #               'display.width', None)
+        # import pdb
+        # pdb.set_trace()
         return pd.concat(predictions)
 
     @timer(default_logger)
@@ -456,11 +466,11 @@ if __name__ == '__main__':
     )
     ev = Evaluator(
         (416, 416, 3),
-        '../../bhills_train.tfrecord',
-        '../../bhills_test.tfrecord',
+        '../Data/TFRecords/beverly_hills_train.tfrecord',
+        '../Data/TFRecords/beverly_hills_test.tfrecord',
         '../Config/beverly_hills.txt'
     )
-    # ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
+    ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
     ovs = {
         'Car': 0.55,
         'Street Sign': 0.5,
