@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import os
+import sys
+sys.path.append('..')
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Main.models import V3Model
 from Helpers.dataset_handlers import read_tfr, get_feature_map
@@ -52,13 +54,13 @@ class Evaluator(V3Model):
         )
         self.train_tf_record = train_tf_record
         self.valid_tf_record = valid_tf_record
-        train_dataset_size = sum(
+        self.train_dataset_size = sum(
             1 for _ in tf.data.TFRecordDataset(train_tf_record)
         )
-        valid_dataset_size = sum(
+        self.valid_dataset_size = sum(
             1 for _ in tf.data.TFRecordDataset(valid_tf_record)
         )
-        self.dataset_size = train_dataset_size + valid_dataset_size
+        self.dataset_size = self.train_dataset_size + self.valid_dataset_size
         self.predicted = 1
 
     def predict_image(self, image_data, features):
@@ -83,38 +85,49 @@ class Evaluator(V3Model):
         )
         return result
 
-    def predict_dataset(self, dataset, workers=16):
+    def predict_dataset(self, dataset, workers=16, split='train', batch_size=64):
         """
         Predict entire dataset.
         Args:
             dataset: MapDataset object.
             workers: Parallel predictions.
+            split: str representation of the dataset 'train' or 'valid'
+            batch_size: Prediction batch size.
 
         Returns:
             pandas DataFrame with entire dataset predictions.
         """
         predictions = []
+        sizes = {'full': self.dataset_size,
+                 'train': self.train_dataset_size,
+                 'valid': self.valid_dataset_size}
+        size = sizes[split]
+        current_prediction = 0
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            future_predictions = {
-                executor.submit(
-                    self.predict_image, img_data, features
-                ): features['image_path']
-                for img_data, labels, features in iter(dataset)
-            }
-            for future_prediction in as_completed(future_predictions):
-                result, completed_image = future_prediction.result()
-                predictions.append(result)
-                completed = f'{self.predicted}/{self.dataset_size}'
-                percent = (self.predicted / self.dataset_size) * 100
-                print(
-                    f'\rpredicting {completed_image} {completed}\t{percent}% completed',
-                    end='',
-                )
-                self.predicted += 1
+            while current_prediction < size:
+                current_batch = [next(dataset) for _ in range(batch_size)]
+                future_predictions = {
+                    executor.submit(
+                        self.predict_image, img_data, features
+                    ): features['image_path']
+                    for img_data, labels, features in current_batch
+                }
+                for future_prediction in as_completed(future_predictions):
+                    result, completed_image = future_prediction.result()
+                    predictions.append(result)
+                    completed = f'{self.predicted}/{self.dataset_size}'
+                    percent = (self.predicted / self.dataset_size) * 100
+                    print(
+                        f'\rpredicting {completed_image} {completed}\t{percent}% completed',
+                        end='',
+                    )
+                    self.predicted += 1
+                    current_prediction += 1
         return pd.concat(predictions)
 
     @timer(default_logger)
-    def make_predictions(self, trained_weights, merge=False, workers=16, shuffle_buffer=512):
+    def make_predictions(self, trained_weights, merge=False, workers=16,
+                         shuffle_buffer=512, batch_size=64):
         """
         Make predictions on both training and validation data sets
             and save results as csv in Output folder.
@@ -124,6 +137,7 @@ class Evaluator(V3Model):
                 and validation sets predictions combined.
             workers: Parallel predictions.
             shuffle_buffer: int, shuffle dataset buffer size.
+            batch_size: Prediction batch size.
 
         Returns:
             1 combined pandas DataFrame for entire dataset predictions
@@ -149,8 +163,10 @@ class Evaluator(V3Model):
         )
         train_dataset.shuffle(shuffle_buffer)
         valid_dataset.shuffle(shuffle_buffer)
-        train_predictions = self.predict_dataset(train_dataset, workers)
-        valid_predictions = self.predict_dataset(valid_dataset, workers)
+        train_dataset = iter(train_dataset)
+        valid_dataset = iter(valid_dataset)
+        train_predictions = self.predict_dataset(train_dataset, workers, 'train', batch_size)
+        valid_predictions = self.predict_dataset(valid_dataset, workers, 'valid', batch_size)
         if merge:
             predictions = pd.concat([train_predictions, valid_predictions])
             save_path = os.path.join(
@@ -443,23 +459,23 @@ class Evaluator(V3Model):
 
 if __name__ == '__main__':
     anc = np.array(
-        [
-            [58, 90],
-            [695, 274],
-            [262, 196],
-            [62, 132],
-            [152, 118],
-            [185, 349],
-            [50, 105],
-            [531, 455],
-            [248, 427],
-        ]
+        [[60, 112],
+         [530, 198],
+         [111, 57],
+         [332, 320],
+         [134, 109],
+         [141, 331],
+         [294, 247],
+         [118, 205],
+         [200, 378]]
     )
     ev = Evaluator(
         (416, 416, 3),
         '../Data/TFRecords/beverly_hills_train.tfrecord',
         '../Data/TFRecords/beverly_hills_test.tfrecord',
-        '../Config/beverly_hills.txt'
+        '../Config/beverly_hills.txt',
+        anc,
+        score_threshold=0.1
     )
     ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
     ovs = {

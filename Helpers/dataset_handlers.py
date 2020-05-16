@@ -203,7 +203,7 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     data[data.dtypes[data.dtypes == 'int64'].index] = data[
         data.dtypes[data.dtypes == 'int64'].index
     ].apply(abs)
-    data.to_csv(os.path.join('..', 'Output', 'full_data.csv'), index=False)
+    data.to_csv(os.path.join('..', 'Data', 'TFRecords', 'full_data.csv'), index=False)
     groups = np.array(data.groupby('Image Path'))
     np.random.shuffle(groups)
     if test_size:
@@ -215,8 +215,8 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
         test_set = groups[separation_index:]
         training_frame = pd.concat([item[1] for item in training_set])
         test_frame = pd.concat([item[1] for item in test_set])
-        training_frame.to_csv(os.path.join('..', 'Output', 'training_data.csv'), index=False)
-        test_frame.to_csv(os.path.join('..', 'Output', 'test_data.csv'), index=False)
+        training_frame.to_csv(os.path.join('..', 'Data', 'TFRecords', 'training_data.csv'), index=False)
+        test_frame.to_csv(os.path.join('..', 'Data', 'TFRecords', 'test_data.csv'), index=False)
         training_path = str(Path(os.path.join(
             output_folder, f'{dataset_name}_train.tfrecord'
         )).absolute().resolve())

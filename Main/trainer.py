@@ -273,22 +273,14 @@ class Trainer(V3Model):
         evaluator = Evaluator(self.input_shape, self.train_tf_record, self.valid_tf_record,
                               self.classes_file, self.anchors, self.masks, self.max_boxes,
                               self.iou_threshold, self.score_threshold)
-        # ev = Evaluator(
-        #     (416, 416, 3),
-        #     '../Data/TFRecords/beverly_hills_train.tfrecord',
-        #     '../Data/TFRecords/beverly_hills_test.tfrecord',
-        #     '../Config/beverly_hills.txt'
-        # )
-        # import pdb
-        # pdb.set_trace()
         predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
         if isinstance(predictions, tuple):
             training_predictions, valid_predictions = predictions
             if any([training_predictions.empty, valid_predictions.empty]):
                 default_logger.info('Aborting evaluations, no detections found')
                 return
-            training_actual = pd.read_csv(os.path.join('..', 'Output', 'training_data.csv'))
-            valid_actual = pd.read_csv(os.path.join('..', 'Output', 'test_data.csv'))
+            training_actual = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'training_data.csv'))
+            valid_actual = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'test_data.csv'))
             training_stats, training_map = evaluator.calculate_map(
                 training_predictions, training_actual, min_overlaps, display_stats, 'Train',
                 save_figs, plot_stats
@@ -298,7 +290,7 @@ class Trainer(V3Model):
                 'Valid', save_figs, plot_stats
             )
             return training_stats, training_map, valid_stats, valid_map
-        actual_data = pd.read_csv(os.path.join('..', 'Output', 'full_data.csv'))
+        actual_data = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'full_data.csv'))
         if predictions.empty:
             default_logger.info('Aborting evaluations, no detections found')
             return
@@ -521,17 +513,15 @@ class MidTrainingEvaluator(Callback, Trainer):
 
 if __name__ == '__main__':
     anc = np.array(
-        [
-            [58, 90],
-            [695, 274],
-            [262, 196],
-            [62, 132],
-            [152, 118],
-            [185, 349],
-            [50, 105],
-            [531, 455],
-            [248, 427],
-        ]
+        [[60, 112],
+         [530, 198],
+         [111, 57],
+         [332, 320],
+         [134, 109],
+         [141, 331],
+         [294, 247],
+         [118, 205],
+         [200, 378]]
     )
     tr = Trainer(
         (416, 416, 3),
@@ -548,7 +538,7 @@ if __name__ == '__main__':
         'dataset_name': 'beverly_hills',
         'test_size': 0.2,
         'sequences': preset_1,
-        'augmentation': False,
+        'augmentation': True,
     }
     ovs = {
         'Car': 0.55,
@@ -568,6 +558,5 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    tr.train(150, 4, 1e-4, dataset_name='beverly_hills',
-             n_epoch_eval=10, new_dataset_conf=dt, merge_evaluation=True, min_overlaps=ovs,
-             clear_outputs=True)
+    tr.train(1, 8, 1e-3, dataset_name='beverly_hills', merge_evaluation=True,
+             min_overlaps=ovs, n_epoch_eval=10, weights='../Models/beverly_hills_model.tf', evaluation_workers=2)
