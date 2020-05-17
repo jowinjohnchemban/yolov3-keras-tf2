@@ -98,14 +98,14 @@ class Evaluator(V3Model):
             pandas DataFrame with entire dataset predictions.
         """
         predictions = []
-        sizes = {'full': self.dataset_size,
-                 'train': self.train_dataset_size,
+        sizes = {'train': self.train_dataset_size,
                  'valid': self.valid_dataset_size}
         size = sizes[split]
         current_prediction = 0
         with ThreadPoolExecutor(max_workers=workers) as executor:
             while current_prediction < size:
-                current_batch = [next(dataset) for _ in range(batch_size)]
+                current_batch = [next(dataset) for _ in range(
+                    min(batch_size, size - current_prediction))]
                 future_predictions = {
                     executor.submit(
                         self.predict_image, img_data, features
@@ -477,7 +477,7 @@ if __name__ == '__main__':
         anc,
         score_threshold=0.1
     )
-    ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
+    # ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
     ovs = {
         'Car': 0.55,
         'Street Sign': 0.5,
@@ -496,11 +496,11 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    # actual = pd.read_csv('../out/2/Output/full_data.csv')
-    # preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
+    actual = pd.read_csv('../Data/TFRecords/full_data.csv')
+    preds = pd.read_csv('../Output/full_dataset_predictions.csv')
     # print(actual)
     # print(preds)
-    # ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
+    ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
 
 
 

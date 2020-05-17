@@ -559,4 +559,4 @@ if __name__ == '__main__':
         'Motorcycle': 0.5,
     }
     tr.train(1, 8, 1e-3, dataset_name='beverly_hills', merge_evaluation=True,
-             min_overlaps=ovs, n_epoch_eval=10, weights='../Models/beverly_hills_model.tf', evaluation_workers=2)
+             min_overlaps=ovs, n_epoch_eval=10, weights='../Models/beverly_hills_model.tf')
