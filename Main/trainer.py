@@ -372,14 +372,14 @@ class Trainer(V3Model):
             callbacks.
         """
         return [
-            ReduceLROnPlateau(verbose=1),
+            ReduceLROnPlateau(verbose=3),
             ModelCheckpoint(
                 os.path.join(checkpoint_name),
                 verbose=1,
                 save_weights_only=True,
             ),
             TensorBoard(log_dir=os.path.join('..', 'Logs')),
-            EarlyStopping(monitor='val_loss', patience=3, verbose=1)
+            EarlyStopping(monitor='val_loss', patience=6, verbose=1)
         ]
 
     @timer(default_logger)
@@ -558,5 +558,5 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    tr.train(150, 16, 1e-5, dataset_name='beverly_hills', merge_evaluation=True,
-             min_overlaps=ovs, n_epoch_eval=10, new_dataset_conf=dt)
+    tr.train(150, 8, 1e-6, dataset_name='beverly_hills', merge_evaluation=True,
+             min_overlaps=ovs, n_epoch_eval=10)
