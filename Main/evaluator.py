@@ -85,6 +85,13 @@ class Evaluator(V3Model):
         )
         return result
 
+    @staticmethod
+    def get_dataset_next(dataset):
+        try:
+            return next(dataset)
+        except tf.errors.UnknownError as e:  # sometimes encountered when reading from google drive
+            default_logger.error(f'Error occurred during reading from dataset\n{e}')
+
     def predict_dataset(self, dataset, workers=16, split='train', batch_size=64):
         """
         Predict entire dataset.
@@ -104,8 +111,11 @@ class Evaluator(V3Model):
         current_prediction = 0
         with ThreadPoolExecutor(max_workers=workers) as executor:
             while current_prediction < size:
-                current_batch = [next(dataset) for _ in range(
-                    min(batch_size, size - current_prediction))]
+                current_batch = []
+                for _ in range(min(batch_size, size - current_prediction)):
+                    item = self.get_dataset_next(dataset)
+                    if item is not None:
+                        current_batch.append(item)
                 future_predictions = {
                     executor.submit(
                         self.predict_image, img_data, features

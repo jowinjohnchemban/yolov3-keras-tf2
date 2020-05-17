@@ -301,7 +301,7 @@ class DataAugment:
             frame_after.empty
         ):  # some post-augmentation photos do not contain bounding boxes
             default_logger.warning(
-                f'skipping image: {new_name}: no bounding boxes after '
+                f'\nskipping image: {new_name}: no bounding boxes after '
                 f'augmentation'
             )
             return
