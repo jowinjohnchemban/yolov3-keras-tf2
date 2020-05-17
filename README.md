@@ -22,19 +22,20 @@
 
 * [Features](#features)
   * [`tensorflow` 2.2 & `keras` functional api.](#tensorflow-2.2)
-  * [CPU & GPU support](#gpu)
-  * [Random weights & DarkNet weights support](#dark)
+  * [CPU & GPU support.](#gpu)
+  * [Random weights & DarkNet weights support.](#dark)
   * [csv-xml annotation parsers.](#csv-xml-annot)
   * [anchor generator.](#anchor-gen)
-  * [`matplotlib` visualization of all stages](#visual)
+  * [`matplotlib` visualization of all stages.](#visual)
   * [`tf.data` input pipeline.](#tf.data-input)
-  * [`pandas` & `numpy` data handling](#pn)
-  * [`imgaug` augmentation pipeline(customizable)](#imgaug#aug)
+  * [`pandas` & `numpy` data handling.](#pn)
+  * [`imgaug` augmentation pipeline(customizable).](#imgaug#aug)
   * [`logging` coverage.](#log)
-  * [all-in-1 custom trainer](#trainer)
-  * [fully vectorized mAP evaluation](#evaluate)
-  * [`labelpix` support](#labelpix)
-  * [Photo and video detection](#photo-vid)
+  * [all-in-1 custom trainer.](#trainer)
+  * [Stop and resume training support.](#stop)
+  * [fully vectorized mAP evaluation.](#evaluate)
+  * [`labelpix` support.](#labelpix)
+  * [Photo and video detection.](#photo-vid)
   
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
@@ -44,7 +45,7 @@
 * [License](#license)
 * [Contact](#contact)
 
-<!-- Features -->
+<!-- FEATURES -->
 #Features
 
 
