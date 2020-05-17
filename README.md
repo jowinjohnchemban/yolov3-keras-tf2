@@ -4,24 +4,50 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
-<br />
 <p>
   <a href="https://github.com/emadboctorx/yolov3-keras-tf2/">
   </a>
 
-  <h3 align="center">yolov3-keras-tf2</h3>
-
-  <p>
-    Yolov3 [object detector] implemented in tensorflow 2.2 - keras
-    <br />
+  <h3 align="center">YoloV3 (object detector) in tensorflow 2.2</h3>
+    .
     <a href="https://github.com/emadboctorx/yolov3-keras-tf2/tree/master/Docs"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
     ·
     <a href="https://github.com/emadboctorx/yolov3-keras-tf2/issues">Report Bug</a>
     ·
     <a href="https://github.com/emadboctorx/yolov3-keras-tf2/issues">Request Feature</a>
   </p>
+
+<!-- TABLE OF CONTENTS -->
+## Table of Contents
+
+* [Features](#features)
+  * [`tensorflow` 2.2 & `keras` functional api.](#tensorflow-2.2)
+  * [CPU & GPU support](#gpu)
+  * [Random weights & DarkNet weights support](#dark)
+  * [csv-xml annotation parsers.](#csv-xml-annot)
+  * [anchor generator.](#anchor-gen)
+  * [`matplotlib` visualization of all stages](#visual)
+  * [`tf.data` input pipeline.](#tf.data-input)
+  * [`pandas` & `numpy` vectorized data handling]
+  * [`imgaug` augmentation pipeline(customizable)](#imgaug#aug)
+  * [`logging` coverage.](#log)
+  * [all-in-1 custom trainer](#trainer)
+  * [fully vectorized mAP evaluation](#evaluate)
+  * [`labelpix` support](#labelpix)
+  * [Photo and video detection](#photo-vid)
+  
+* [Getting Started](#getting-started)
+  * [Prerequisites](#prerequisites)
+  * [Installation](#installation)
+* [Usage](#usage)
+* [Contributing](#contributing)
+* [License](#license)
+* [Contact](#contact)
+
+<!-- Features -->
+#Features
+
+
 
 [contributors-shield]: https://img.shields.io/github/contributors/emadboctorx/yolov3-keras-tf2?style=flat-square
 [contributors-url]: https://github.com/emadboctorx/yolov3-keras-tf2/graphs/contributors
