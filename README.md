@@ -28,7 +28,7 @@
   * [anchor generator.](#anchor-gen)
   * [`matplotlib` visualization of all stages](#visual)
   * [`tf.data` input pipeline.](#tf.data-input)
-  * [`pandas` & `numpy` vectorized data handling]
+  * [`pandas` & `numpy` data handling](#pn)
   * [`imgaug` augmentation pipeline(customizable)](#imgaug#aug)
   * [`logging` coverage.](#log)
   * [all-in-1 custom trainer](#trainer)
