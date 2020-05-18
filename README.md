@@ -27,7 +27,7 @@
 * [Description](#description)
 
 * [Features](#features)
-  * [tensorflow-22--keras-functional-api](#tensorflow-22--keras-functional-api)
+  * [tensorflow-2.X--keras-functional-api](#tensorflow-22--keras-functional-api)
   * [cpu-gpu support](#cpu--gpu-support)
   * [Random weights and DarkNet weights support](#random-weights-and-darknet-weights-support)
   * [csv-xml annotation parsers.](#csv-xml-annotation-parsers)
