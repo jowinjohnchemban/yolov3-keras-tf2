@@ -27,13 +27,13 @@
 * [Description](#description)
 
 * [Features](#features)
-  * [`tensorflow` 2.2 & `keras` functional api.](#tf2)
-  * [CPU & GPU support.](#gpu-cpu)
-  * [Random weights & DarkNet weights support.](#weights)
-  * [csv-xml annotation parsers.](#annot)
-  * [Anchor generator.](#anchor-gen)
-  * [`matplotlib` visualization of all stages.](#visual)
-  * [`tf.data` input pipeline.](#input)
+  * [tensorflow-22--keras-functional-api](#tensorflow-22--keras-functional-api)
+  * [cpu-gpu support](#cpu--gpu-support)
+  * [Random weights and DarkNet weights support](#random-weights-and-darknet-weights-support)
+  * [csv-xml annotation parsers.](#csv-xml-annotation-parsers)
+  * [Anchor generator.](#anchor-generator)
+  * [`matplotlib` visualization of all stages.](#matplotlib-visualization-of-all-stages)
+  * [`tf.data` input pipeline.](#tf.data)
   * [`pandas` & `numpy` data handling.](#pn)
   * [`imgaug` augmentation pipeline(customizable).](#aug)
   * [`logging` coverage.](#log)
@@ -109,7 +109,7 @@ The program detects and uses available GPUs at runtime(training/detection)
 if no GPUs available, the CPU will be used(slow).
 
  
-### **Random weights & DarkNet weights support**
+### **Random weights and DarkNet weights support**
 
 Both options are available, and NOTE in case of using DarkNet [yolov3 weights](https://pjreddie.com/media/files/yolov3.weights)
 you must maintain the same number of [COCO classes](https://gist.github.com/AruniRC/7b3dadd004da04c80198557db5da4bda) (80 classes)
@@ -162,6 +162,34 @@ anchors with process visualization.
 * **k-means visualization:**
 
 ![GitHub Logo](/Samples/anchors.png)
+
+* **Generated anchors:**
+
+![GitHub Logo](/Samples/anchors_sample.png)
+
+* **Precision and recall curves:**
+
+![GitHub Logo](/Samples/pr.png)
+
+* **Evaluation bar charts:**
+
+![GitHub Logo](/Samples/map.png)
+
+* **Dataset pre and post augmentation visualization with bounding boxes:**
+
+You can always visualize different stages of the program using my other repo 
+[labelpix](https://github.com/emadboctorx/labelpix) which is tool for drawing 
+bounding boxes, but can also be used to visualize bounding boxes over images using 
+csv files in the format mentioned [here](#csv-xml-annotation-parsers).
+
+
+
+
+
+
+
+
+
 
 
 
