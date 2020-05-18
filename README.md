@@ -33,10 +33,10 @@
   * [csv-xml annotation parsers.](#csv-xml-annotation-parsers)
   * [Anchor generator.](#anchor-generator)
   * [`matplotlib` visualization of all stages.](#matplotlib-visualization-of-all-stages)
-  * [`tf.data` input pipeline.](#tf.data)
-  * [`pandas` & `numpy` data handling.](#pn)
-  * [`imgaug` augmentation pipeline(customizable).](#aug)
-  * [`logging` coverage.](#log)
+  * [`tf.data` input pipeline.](#tfdata-input-pipeline)
+  * [`pandas` & `numpy` data handling.](#pandas--numpy-data-handling)
+  * [`imgaug` augmentation pipeline(customizable).](#imgaug-augmentation-pipelinecustomizable)
+  * [`logging` coverage.](#logging)
   * [All-in-1 custom trainer.](#trainer)
   * [Stop and resume training support.](#stop)
   * [Fully vectorized mAP evaluation.](#evaluate)
@@ -175,6 +175,10 @@ anchors with process visualization.
 
 ![GitHub Logo](/Samples/map.png)
 
+* **Actual vs. detections:**
+
+![GitHub Logo](/Samples/true_false.png)
+
 * **Dataset pre and post augmentation visualization with bounding boxes:**
 
 You can always visualize different stages of the program using my other repo 
@@ -182,27 +186,32 @@ You can always visualize different stages of the program using my other repo
 bounding boxes, but can also be used to visualize bounding boxes over images using 
 csv files in the format mentioned [here](#csv-xml-annotation-parsers).
 
+### **`tf.data` input pipeline**
 
+[TFRecords](https://www.tensorflow.org/tutorials/load_data/tfrecord) a simple format for storing a sequence 
+of binary records. Protocol buffers are a cross-platform, cross-language library for efficient serialization of 
+structured data and are used as input pipeline to store and read data efficiently
+the program takes as input images and their respective annotations and builds training and validation(optional)
+TFRecords to be further used for all operations and TFRecords are also used in the evaluation(mid/post) training,
+so it's valid to say you can delete images to free space after conversion to TFRecords.
 
+### **`pandas` & `numpy` data handling**
 
+Most of the operations are using numpy and pandas for efficiency and vectorization.
 
+### **`imgaug` augmentation pipeline(customizable)**
 
+Special thanks to the amazing [imgaug](https://github.com/aleju/imgaug) creators,
+an augmentation pipeline(optional) is available and NOTE that the augmentation is
+conducted **before** the training not during the training due to technical complications
+to integrate tensorflow and imgaug. If you have a small dataset, augmentation is an option
+and it can be preconfigured before the training.
 
+### **`logging`**
 
+Different operations are recorded using `logging` module.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+### **All-in-1 custom `Trainer` class**
 
 
 
