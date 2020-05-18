@@ -179,6 +179,15 @@ anchors with process visualization.
 
 ![GitHub Logo](/Samples/true_false.png)
 
+* **Augmentation option visualization**
+Double screen visualization(before/after) image like the following examples:
+
+![GitHub Logo](/Samples/aug1.png)
+
+![GitHub Logo](/Samples/aug2.png)
+
+![GitHub Logo](/Samples/aug3.png)
+
 * **Dataset pre and post augmentation visualization with bounding boxes:**
 
 You can always visualize different stages of the program using my other repo 

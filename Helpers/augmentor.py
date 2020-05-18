@@ -516,10 +516,10 @@ class DataAugment:
 
 if __name__ == '__main__':
     aug = DataAugment(
-        '../../../beverly_hills/bh_labels.csv',
+        '../../../../beverly_hills/bh_labels.csv',
         augmentations,
         converted_coordinates_file='scratch/label_coordinates.csv',
-        image_folder='../../../beverly_hills/photos',
+        image_folder='../../../../beverly_hills/photos',
     )
     for it in augmentations:
         aug.preview_augmentations(2, it, True)
