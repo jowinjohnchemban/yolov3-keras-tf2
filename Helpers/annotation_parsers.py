@@ -158,6 +158,7 @@ def parse_voc_folder(folder_path, voc_conf):
     return frame
 
 
+@visualization_wrapper
 def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
     """
     Read relative data and return adjusted frame accordingly.

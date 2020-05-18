@@ -89,7 +89,7 @@ if __name__ == '__main__':
     from Helpers.annotation_parsers import parse_voc_folder
 
     fr = parse_voc_folder(
-        '../../../beverly_hills/labels/', '../Config/voc_conf.json'
+        '../../../../beverly_hills/labels/', '../Config/voc_conf.json'
     )
     relative_dims = np.array(
         list(zip(fr['Relative Width'], fr['Relative Height']))
