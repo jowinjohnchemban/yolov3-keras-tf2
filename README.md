@@ -184,13 +184,9 @@ anchors with process visualization.
 
 * **Augmentation options visualization:**
 
-Double screen visualization(before/after) image like the following examples:
+Double screen visualization(before/after) image like the following example:
 
 ![GitHub Logo](/Samples/aug1.png)
-
-![GitHub Logo](/Samples/aug2.png)
-
-![GitHub Logo](/Samples/aug3.png)
 
 * **Dataset pre and post augmentation visualization with bounding boxes:**
 
