@@ -369,7 +369,7 @@ in xml VOC format, you can easily convert them using Helpers > annotation_parser
           augmentation_map=augmentations)
     aug.augment_photo_folder()
 
-After augmentation you'll find augmented image in the Data > Photos folder
+After augmentation you'll find augmented images in the Data > Photos folder
 or the folder you specified(if you did specify one) 
 
 And you should find 2 csv files in the Output folder: 
