@@ -425,6 +425,8 @@ Here are the most basic steps to evaluate a trained model:
                   min_overlaps=0.5, 
                   display_stats=True)
 
+After evaluation, you'll find resulting plots and predictions in the Output folder.
+
 
 ## **Contributing**
 
@@ -448,6 +450,7 @@ Give a ⭐️ if this project helped you!
 ## **Contact**
 
 Emad Boctor - emad_1989@hotmail.com
+
 Project link: https://github.com/emadboctorx/yolov3-keras-tf2
                    
 
