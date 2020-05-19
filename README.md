@@ -309,12 +309,25 @@ and if `augmentation` this implies the following:
 - `workers`: (optional) defaults to 32 parallel augmentations.
 - `batch_size`: (optional) this is the augmentation batch size defaults to 64 images to load at once.
 
+      dataset_conf = {
+                    'relative_labels': '/path/to/labels.csv',
+                    'dataset_name': 'dataset_name',
+                    'test_size': 0.2,
+                    'sequences': preset_1,  # check Config > augmentation_options.py
+                    'augmentation': True,
+      }
+
 6- Create new anchor generation configuration(dict) that contains the following keys:
 
 - `anchors_no`: number of anchors(should be 9)
 and one of the following:
     -  `relative_labels`: same as dataset configuration above
     - `from_xml`: same as dataset configuration above
+    
+          anchors_conf = {
+                          'anchors_no': 9,
+                          'relative_labels':  '/path/to/labels.csv'
+          }
 
 7- Start the training
 
