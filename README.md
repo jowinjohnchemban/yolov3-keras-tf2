@@ -41,6 +41,7 @@
   * [Stop and resume training support.](#stop-and-resume-training-support)
   * [Fully vectorized mAP evaluation.](#fully-vectorized-map-evaluation)
   * [`labelpix` support.](#labelpix-support)
+  * [Photo & video detection](photo-vid)
 
 * [Usage](#usage)
   * [Training](#training)
@@ -332,8 +333,10 @@ of the program.
              batch_size=8, 
              learning_rate=1e-3, 
              dataset_name='dataset_name', 
-             merge_evaluation=True,
+             merge_evaluation=False,
              min_overlaps=0.5,
+             new_dataset_conf=dataset_conf,  # check step 5
+             new_anchors_conf=anchors_conf,  # check step 6
              #  weights='path/to/weights'  # If you're using DarkNet weights or resuming training
              )
              
@@ -367,6 +370,7 @@ in xml VOC format, you can easily convert them using Helpers > annotation_parser
     aug = DataAugment(
           labels_file='path/to/labels/csv/file',
           augmentation_map=augmentations)
+    aug.create_sequences(sequences)  # check the docs
     aug.augment_photo_folder()
 
 After augmentation you'll find augmented images in the Data > Photos folder
