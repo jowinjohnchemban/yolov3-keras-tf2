@@ -37,13 +37,16 @@
   * [`pandas` & `numpy` data handling.](#pandas--numpy-data-handling)
   * [`imgaug` augmentation pipeline(customizable).](#imgaug-augmentation-pipelinecustomizable)
   * [`logging` coverage.](#logging)
-  * [All-in-1 custom trainer.](#trainer)
-  * [Stop and resume training support.](#stop)
-  * [Fully vectorized mAP evaluation.](#evaluate)
-  * [`labelpix` support.](#labelpix)
-  * [Photo and video detection.](#photo-vid)
+  * [All-in-1 custom trainer.](#all-in-1-custom-trainer-class)
+  * [Stop and resume training support.](#stop-and-resume-training-support)
+  * [Fully vectorized mAP evaluation.](#fully-vectorized-map-evaluation)
+  * [`labelpix` support.](#labelpix-support)
 
 * [Usage](#usage)
+  * [Training](#training)
+  * [Augmentation](#augmentation)
+  * [Evaluation](#evaluation)
+  * [Detection](#detection)
 * [Contributing](#contributing)
 * [License](#license)
 * [Contact](#contact)
@@ -108,7 +111,6 @@ including:
 The program detects and uses available GPUs at runtime(training/detection)
 if no GPUs available, the CPU will be used(slow).
 
- 
 ### **Random weights and DarkNet weights support**
 
 Both options are available, and NOTE in case of using DarkNet [yolov3 weights](https://pjreddie.com/media/files/yolov3.weights)
@@ -179,7 +181,8 @@ anchors with process visualization.
 
 ![GitHub Logo](/Samples/true_false.png)
 
-* **Augmentation option visualization**
+* **Augmentation options visualization:**
+
 Double screen visualization(before/after) image like the following examples:
 
 ![GitHub Logo](/Samples/aug1.png)
@@ -214,7 +217,7 @@ Special thanks to the amazing [imgaug](https://github.com/aleju/imgaug) creators
 an augmentation pipeline(optional) is available and NOTE that the augmentation is
 conducted **before** the training not during the training due to technical complications
 to integrate tensorflow and imgaug. If you have a small dataset, augmentation is an option
-and it can be preconfigured before the training.
+and it can be preconfigured before the training check [Augmentor.md](Docs/Augmentor.md)
 
 ### **`logging`**
 
@@ -222,9 +225,163 @@ Different operations are recorded using `logging` module.
 
 ### **All-in-1 custom `Trainer` class**
 
+For custom training, `Trainer` class accepts configurations for augmentation, 
+new anchor generation, new dataset(TFRecord(s)) creation, mAP evaluation
+mid-training and post training. So all you have to do is place images
+in Data > Photos, provide the configuration that suits you and start the training
+process, all operations are managed from the same place for convenience.
+For detailed instructions check [Trainer.md](Docs/Trainer.md)
+
+### **Stop and resume training support**
+
+by default the trainer checkpoints to Models > checkpoint_name.tf at the end
+of each training epoch which enables the training to be resumed at any given 
+point by loading the checkpoint which would be the most recent.
+
+### **Fully vectorized mAP evaluation**
+
+Evaluation is optional during the training every n epochs(not recommended for 
+large datasets as it predicts every image in the dataset) and one evaluation 
+at the end which is optional as well. Training and validation datasets
+can be evaluated separately and calculate mAP(mean average precision) as well
+as precision and recall curves for every class in the model, 
+check [Evaluator.md](Docs/Evaluator.md)
+
+### **labelpix support**
+
+You can check my other repo [labelpix](https://github.com/emadboctorx/labelpix) which is a
+labeling tool for drawing bounding boxes over images if you need to make custom datasets
+the tool can help and is supported by the detector. You can use csv files
+in the format mentioned [here](#csv-xml-annotation-parsers) as labels and load
+images if you need to preview any stage of the training/augmentation/evaluation/detection.
+
+## **Usage**
+
+### **Training**
+
+**Here are the most basic steps to train using a custom dataset:**
+
+1- Copy images to Data > Photos
+
+2- If labels are in the XML VOC [format](#csv-xml-annotation-parsers),
+copy label xml files to Data > Labels
+
+3- Create classes .txt file that contains classes delimited by \n
 
 
+    dog
+    cat
+    car
+    person
+    boat
+    fan
+    laptop
 
+
+4- Create a training instance and specify `input_shape`, `classes_file`,
+`image_width` and `image_height`
+
+
+    trainer = Trainer(
+             input_shape=(416, 416, 3),
+             classes_file='../Config/beverly_hills.txt',
+             image_width=1344,  # The original image width
+             image_height=756   # The original image height
+    )
+
+5- Create dataset configuration(dict) that contains the following keys:
+
+- `dataset_name`: TFRecord prefix(required)
+
+and one of the following:(required)
+
+- `relative_labels`: path to csv file in the following [format](#csv-xml-annotation-parsers)
+
+or
+
+- `from_xml`: `True` 
+
+and
+
+- `test_size`: percentage of the validation split ex: 0.1(optional)
+- `augmentation`: `True` (optional)
+
+and if `augmentation` this implies the following:
+
+- `sequences`: (required) A list of augmentation sequences check [Augmentor.md](Docs/Augmentor.md) 
+- `workers`: (optional) defaults to 32 parallel augmentations.
+- `batch_size`: (optional) this is the augmentation batch size defaults to 64 images to load at once.
+
+6- Create new anchor generation configuration(dict) that contains the following keys:
+
+- `anchors_no`: number of anchors(should be 9)
+and one of the following:
+    -  `relative_labels`: same as dataset configuration above
+    - `from_xml`: same as dataset configuration above
+
+7- Start the training
+
+**Note** 
+
+If you're going to use DarkNet yolov3 weights, make sure the classes file
+contains 80 classes(COCO classes) or you'll get an error. Transfer learning 
+to models with different number of classes will be supported in future versions
+of the program.
+
+    tr.train(epochs=100, 
+             batch_size=8, 
+             learning_rate=1e-3, 
+             dataset_name='dataset_name', 
+             merge_evaluation=True,
+             min_overlaps=0.5,
+             #  weights='path/to/weights'  # If you're using DarkNet weights or resuming training
+             )
+             
+
+After the training completes:
+
+1. The trained model is saved in Models folder(which you can use to resume training later/predict photos or videos)
+2. The resulting TFRecords and their corresponding csv data are saved in Data > TFRecords
+3. The resulting figures and evaluation results are saved in Output folder.
+
+### **Augmentation**
+
+**Here are the most basic steps to augment images(no training, just augmentation):**
+
+If you need to augment photos and take your time to examine/visualize the results,
+here are the steps:
+
+1- Copy images to Data > Photos or specify `image_folder` param
+
+2- Ensure you have a csv file containing the labels in the format 
+mentioned [here](#csv-xml-annotation-parsers), if you have labels
+in xml VOC format, you can easily convert them using Helpers > annotation_parsers.py > 
+`parse_voc_folder()` (everything is explained in the docstrings)
+
+3- Create augmentation instance:
+
+    from Config.augmentation_options import augmentations
+    from Helpers.augmentor import DataAugment
+    
+    
+    aug = DataAugment(
+          labels_file='path/to/labels/csv/file',
+          augmentation_map=augmentations)
+    aug.augment_photo_folder()
+
+After augmentation you'll find augmented image in the Data > Photos folder
+or the folder you specified(if you did specify one) 
+
+And you should find 2 csv files in the Output folder: 
+
+1. `augmented_data_plus_original.csv` : you can use this with 
+[labelpix](https://github.com/emadboctorx/labelpix) to visualize results with
+bounding boxes
+
+2. `adjusted_data_plus_original.csv`
+
+and any of the 2 csv files above can be used in the new dataset configuration
+in the training.
 
 
 

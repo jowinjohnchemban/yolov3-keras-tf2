@@ -558,5 +558,9 @@ if __name__ == '__main__':
         'Delivery Truck': 0.5,
         'Motorcycle': 0.5,
     }
-    tr.train(150, 8, 1e-3, dataset_name='beverly_hills', merge_evaluation=True,
-             min_overlaps=ovs, n_epoch_eval=10)
+    tr.train(epochs=100,
+             batch_size=8,
+             learning_rate=1e-3,
+             dataset_name='beverly_hills',
+             merge_evaluation=True,
+             min_overlaps=0.5)
