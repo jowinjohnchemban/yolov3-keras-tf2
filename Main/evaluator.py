@@ -481,10 +481,10 @@ if __name__ == '__main__':
     )
     ev = Evaluator(
         (416, 416, 3),
-        '../Data/TFRecords/beverly_hills_train.tfrecord',
-        '../Data/TFRecords/beverly_hills_test.tfrecord',
-        '../Config/beverly_hills.txt',
-        anc,
+        train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
+        valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord',
+        classes_file='../Config/beverly_hills.txt',
+        anchors=anc,
         score_threshold=0.1
     )
     # ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
@@ -510,7 +510,11 @@ if __name__ == '__main__':
     preds = pd.read_csv('../Output/full_dataset_predictions.csv')
     # print(actual)
     # print(preds)
-    ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
+    ev.calculate_map(
+        prediction_data=preds,
+        actual_data=actual,
+        min_overlaps=0.5,
+        display_stats=True)
 
 
 

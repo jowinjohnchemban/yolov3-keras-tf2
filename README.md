@@ -50,6 +50,7 @@
   * [Detection](#detection)
 * [Contributing](#contributing)
 * [License](#license)
+* [Show your support](#show-your-support)
 * [Contact](#contact)
 
 <!-- GETTING STARTED -->
@@ -396,8 +397,59 @@ bounding boxes
 and any of the 2 csv files above can be used in the new dataset configuration
 in the training.
 
+## **Evaluation**
+
+Here are the most basic steps to evaluate a trained model:
+
+1. Create an evaluation instance:
+
+       evaluator = Evaluator(
+                   input_shape=(416, 416, 3),
+                   train_tf_record='/path/to/train.tfrecord',
+                   valid_tf_record='/path/to/valid.tfrecord',
+                   classes_file='/path/to/classes.txt',
+                   anchors=anchors,  # defaults to yolov3 anchors
+                   score_threshold=0.1  # defaults to 0.5 but it's okay to be lower
+                   )
+                   
+2. Read actual and prediction results(that resulted from the training)
+
+       actual = pd.read_csv('../Data/TFRecords/full_data.csv')
+       preds = pd.read_csv('../Output/full_dataset_predictions.csv')
+       
+3. Calculate mAP(mean average precision):
+
+       evaluator.calculate_map(
+                  prediction_data=preds, 
+                  actual_data=actual, 
+                  min_overlaps=0.5, 
+                  display_stats=True)
 
 
+## **Contributing**
+
+Contributions are what make the open source community such an amazing place to  
+learn, inspire, and create. Any contributions you make are greatly appreciated.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## **License**
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+## **Show your support**
+
+Give a ⭐️ if this project helped you!
+
+## **Contact**
+
+Emad Boctor - emad_1989@hotmail.com
+Project link: https://github.com/emadboctorx/yolov3-keras-tf2
+                   
 
 
 [contributors-shield]: https://img.shields.io/github/contributors/emadboctorx/yolov3-keras-tf2?style=flat-square
