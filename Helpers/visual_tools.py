@@ -219,7 +219,3 @@ def visualization_wrapper(to_visualize):
         return result
     return visualized
 
-
-if __name__ == '__main__':
-    from Helpers.annotation_parsers import adjust_non_voc_csv
-    adjust_non_voc_csv('../Data/bh_labels.csv', 'k', 1344, 756)

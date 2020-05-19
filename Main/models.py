@@ -454,10 +454,3 @@ class V3Model:
         default_logger.info(f'Loaded weights: {weights_file} ... success')
         print()
 
-
-if __name__ == '__main__':
-    mod = V3Model((416, 416, 3), 80)
-    tr, inf = mod.create_models()
-    mod.load_weights('../../yolov3.weights')
-    tr.summary()
-    inf.summary()

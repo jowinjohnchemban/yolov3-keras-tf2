@@ -269,12 +269,3 @@ def read_tfr(
         )
     )
 
-
-if __name__ == '__main__':
-    from Helpers.annotation_parsers import adjust_non_voc_csv
-    adj = adjust_non_voc_csv(
-        '../Data/bh_labels.csv', '../../../beverly_hills/photos', 1344, 756
-    )
-    save_tfr(adj, '../../', 'bhills', 0.2)
-    # read_tfr('../../beverly_hills_train.tfrecord', '../Config/beverly_hills.txt', get_feature_map(),
-    #          100)

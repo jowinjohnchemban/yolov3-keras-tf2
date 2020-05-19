@@ -223,10 +223,3 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
         ]
     ]
 
-
-if __name__ == '__main__':
-    t1 = perf_counter()
-    fr = parse_voc_folder(
-        '../../../beverly_hills/labels', '../Config/voc_conf.json'
-    )
-    print(f'Time: {perf_counter() - t1} seconds')

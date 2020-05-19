@@ -467,54 +467,5 @@ class Evaluator(V3Model):
         return stats, map_score
 
 
-if __name__ == '__main__':
-    anc = np.array(
-        [[60, 112],
-         [530, 198],
-         [111, 57],
-         [332, 320],
-         [134, 109],
-         [141, 331],
-         [294, 247],
-         [118, 205],
-         [200, 378]]
-    )
-    ev = Evaluator(
-        (416, 416, 3),
-        train_tf_record='../Data/TFRecords/beverly_hills_train.tfrecord',
-        valid_tf_record='../Data/TFRecords/beverly_hills_test.tfrecord',
-        classes_file='../Config/beverly_hills.txt',
-        anchors=anc,
-        score_threshold=0.1
-    )
-    # ev.make_predictions('../Models/beverly_hills_model.tf', merge=True)
-    ovs = {
-        'Car': 0.55,
-        'Street Sign': 0.5,
-        'Palm Tree': 0.5,
-        'Street Lamp': 0.5,
-        'Minivan': 0.5,
-        'Traffic Lights': 0.5,
-        'Pedestrian': 0.5,
-        'Fire Hydrant': 0.5,
-        'Flag': 0.5,
-        'Trash Can': 0.5,
-        'Bicycle': 0.5,
-        'Bus': 0.5,
-        'Pickup Truck': 0.5,
-        'Road Block': 0.5,
-        'Delivery Truck': 0.5,
-        'Motorcycle': 0.5,
-    }
-    actual = pd.read_csv('../Data/TFRecords/full_data.csv')
-    preds = pd.read_csv('../Output/full_dataset_predictions.csv')
-    # print(actual)
-    # print(preds)
-    ev.calculate_map(
-        prediction_data=preds,
-        actual_data=actual,
-        min_overlaps=0.5,
-        display_stats=True)
-
 
 
