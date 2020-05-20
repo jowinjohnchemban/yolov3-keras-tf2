@@ -53,6 +53,8 @@
 * [Show your support](#show-your-support)
 * [Contact](#contact)
 
+![GitHub Logo](/Samples/detections.png)
+
 <!-- GETTING STARTED -->
 ## **Getting started**
 

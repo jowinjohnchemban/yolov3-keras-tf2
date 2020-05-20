@@ -297,9 +297,15 @@ def get_detection_data(image, image_name, outputs, class_names):
         data: pandas DataFrame with the detections.
     """
     nums = outputs[-1]
-    boxes, scores, classes = [
-        item[0][: int(nums)].numpy() for item in outputs[:-1]
-    ]
+    boxes, scores, classes = 3 * [None]
+    if isinstance(outputs[0], np.ndarray):
+        boxes, scores, classes = [
+            item[0][: int(nums)] for item in outputs[:-1]
+        ]
+    if not isinstance(outputs[0], np.ndarray):
+        boxes, scores, classes = [
+            item[0][: int(nums)].numpy() for item in outputs[:-1]
+        ]
     w, h = np.flip(image.shape[0: 2])
     data = pd.DataFrame(boxes, columns=['x1', 'y1', 'x2', 'y2'])
     data[['x1', 'x2']] = (data[['x1', 'x2']] * w).astype('int64')
@@ -364,12 +370,11 @@ def calculate_ratios(x1, y1, x2, y2, width, height):
     return bx, by, bw, bh
 
 
-def calculate_display_data(prediciton_file, classes_file, img_width, img_height, out):
-    preds = pd.read_csv(prediciton_file)
+def calculate_display_data(prediction_file, classes_file, img_width, img_height, out):
+    preds = pd.read_csv(prediction_file)
     rows = []
     indices = {item: ind for ind, item in enumerate([item.strip() for item in open(
         classes_file).readlines()])}
-    print(preds.columns)
     for ind, item in preds.iterrows():
         img, obj, xx1, yy1, xx2, yy2, score, imgw, imgh, dk = item.values
         bxx, byy, bww, bhh = calculate_ratios(xx1, yy1, xx2, yy2, img_width, img_height)

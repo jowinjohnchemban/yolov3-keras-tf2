@@ -111,7 +111,7 @@ class Trainer(V3Model):
                 os.path.join('..', 'Data', 'XML Labels'),
                 os.path.join('..', 'Config', 'voc_conf.json'),
             )
-            labels_frame.to_csv(os.path.join('..', 'Output', 'parsed_from_xml.csv'), index=False)
+            labels_frame.to_csv(os.path.join('..', 'Output', 'Data', 'parsed_from_xml.csv'), index=False)
             check += 1
         if configuration.get('adjusted_frame'):
             if check:
@@ -502,10 +502,11 @@ class MidTrainingEvaluator(Callback, Trainer):
         if not (epoch + 1) % self.n_epochs == 0:
             return
         self.evaluate(*self.evaluation_args)
-        os.mkdir(os.path.join('..', 'Output', f'epoch-{epoch}-evaluation'))
-        for file_name in os.listdir(os.path.join('..', 'Output')):
+        os.mkdir(os.path.join('..', 'Output', 'Evaluation', f'epoch-{epoch}-evaluation'))
+        for file_name in os.listdir(os.path.join('..', 'Output', 'Evaluation')):
             if not os.path.isdir(file_name) and (file_name.endswith('.png') or 'prediction' in file_name):
-                full_path = str(Path(os.path.join('..', 'Output', file_name)).absolute().resolve())
+                full_path = str(Path(os.path.join(
+                    '..', 'Output', 'Evaluation', file_name)).absolute().resolve())
                 new_path = str(Path(os.path.join(
-                    '..', 'Output', f'epoch-{epoch}-evaluation', file_name)).absolute().resolve())
+                    '..', 'Output', 'Evaluation', f'epoch-{epoch}-evaluation', file_name)).absolute().resolve())
                 shutil.move(full_path, new_path)

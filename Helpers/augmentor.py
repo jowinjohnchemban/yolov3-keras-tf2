@@ -393,7 +393,7 @@ class DataAugment:
             self.augmentation_data, columns=self.mapping.columns
         )
         saving_path = os.path.join(
-            '..', 'Output', f'augmented_data_plus_original.csv'
+            '..', 'Output', 'Data', f'augmented_data_plus_original.csv'
         )
         combined = pd.concat([self.mapping, augmentation_frame])
         for item in ['bx', 'by', 'bw', 'bh']:

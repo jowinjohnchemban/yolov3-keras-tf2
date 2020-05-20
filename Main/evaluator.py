@@ -76,7 +76,7 @@ class Evaluator(V3Model):
         image_path = bytes.decode(features['image_path'].numpy())
         image_name = os.path.basename(image_path)
         image = tf.expand_dims(image_data, 0)
-        resized = transform_images(image, 416)
+        resized = transform_images(image, self.input_shape[0])
         outs = self.inference_model(resized)
         adjusted = cv2.cvtColor(image_data.numpy(), cv2.COLOR_RGB2BGR)
         result = (
@@ -180,15 +180,15 @@ class Evaluator(V3Model):
         if merge:
             predictions = pd.concat([train_predictions, valid_predictions])
             save_path = os.path.join(
-                '..', 'Output', 'full_dataset_predictions.csv'
+                '..', 'Output', 'Data', 'full_dataset_predictions.csv'
             )
             predictions.to_csv(save_path, index=False)
             return predictions
         train_path = os.path.join(
-            '..', 'Output', 'train_dataset_predictions.csv'
+            '..', 'Output', 'Data', 'train_dataset_predictions.csv'
         )
         valid_path = os.path.join(
-            '..', 'Output', 'valid_dataset_predictions.csv'
+            '..', 'Output', 'Data', 'valid_dataset_predictions.csv'
         )
         train_predictions.to_csv(train_path, index=False)
         valid_predictions.to_csv(valid_path, index=False)
@@ -465,6 +465,52 @@ class Evaluator(V3Model):
             visualize_pr(calculated, save_figs, fig_prefix)
             visualize_evaluation_stats(stats, fig_prefix)
         return stats, map_score
+
+
+if __name__ == '__main__':
+    anc = np.array(
+        [[60, 112],
+         [530, 198],
+         [111, 57],
+         [332, 320],
+         [134, 109],
+         [141, 331],
+         [294, 247],
+         [118, 205],
+         [200, 378]]
+    )
+    ev = Evaluator(
+        (416, 416, 3),
+        '../../bhills_train.tfrecord',
+        '../../bhills_test.tfrecord',
+        '../Config/beverly_hills.txt',
+        anc,
+        score_threshold=0.1
+    )
+    ev.make_predictions('../../../beverly_hills/models/beverly_hills_model.tf', merge=True)
+    # ovs = {
+    #     'Car': 0.55,
+    #     'Street Sign': 0.5,
+    #     'Palm Tree': 0.5,
+    #     'Street Lamp': 0.5,
+    #     'Minivan': 0.5,
+    #     'Traffic Lights': 0.5,
+    #     'Pedestrian': 0.5,
+    #     'Fire Hydrant': 0.5,
+    #     'Flag': 0.5,
+    #     'Trash Can': 0.5,
+    #     'Bicycle': 0.5,
+    #     'Bus': 0.5,
+    #     'Pickup Truck': 0.5,
+    #     'Road Block': 0.5,
+    #     'Delivery Truck': 0.5,
+    #     'Motorcycle': 0.5,
+    # }
+    # actual = pd.read_csv('../out/2/Output/full_data.csv')
+    # preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
+    # print(actual)
+    # print(preds)
+    # ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
 
 
 

@@ -24,7 +24,8 @@ def save_fig(title, save_figures=True):
         None
     """
     if save_figures:
-        saving_path = str(Path(os.path.join('..', 'Output', f'{title}.png')).absolute().resolve())
+        saving_path = str(Path(os.path.join('..', 'Output', 'Plots',
+                                            f'{title}.png')).absolute().resolve())
         if os.path.exists(saving_path):
             return
         plt.savefig(saving_path)
@@ -43,7 +44,7 @@ def visualize_box_relative_sizes(frame, save_result=True):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
-    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(os.path.join('..', 'Output')) or (
+    if os.path.exists(os.path.join('..', 'Output', 'Plots', f'{title}.png')) or (
             frame is None):
         return
     sns.scatterplot(
@@ -70,9 +71,8 @@ def visualize_k_means_output(centroids, frame, save_result=True):
     title = (
         f'{centroids.shape[0]} Centroids representing relative anchor sizes.'
     )
-    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(
-        os.path.join('..', 'Output')
-    ) or (frame is None):
+    if os.path.exists(os.path.join('..', 'Output', 'Plots', f'{title}.png')) or (
+            frame is None):
         return
     fig, ax = plt.subplots()
     visualize_box_relative_sizes(frame)
@@ -93,9 +93,7 @@ def visualize_boxes(relative_anchors, sample_image, save_result=True):
         None
     """
     title = 'Generated anchors relative to sample image size'
-    if os.path.join('..', 'Output', f'{title}.png') in os.listdir(
-        os.path.join('..', 'Output')
-    ):
+    if os.path.exists(os.path.join('..', 'Output', 'Plots', f'{title}.png')):
         return
     img = cv2.imread(sample_image)
     width, height = imagesize.get(sample_image)
@@ -214,7 +212,7 @@ def visualization_wrapper(to_visualize):
                 return result
             visualize_k_means_output(*result)
             plt.show()
-            visualize_boxes(result[0], os.path.join('..', 'sample_image.png'))
+            visualize_boxes(result[0], os.path.join('..', 'Samples', 'sample_image.png'))
             plt.show()
         return result
     return visualized

@@ -20,5 +20,5 @@ test2.py
 !.gitkeep
 .idea
 *.iml
-!sample_image.png
+!Samples
 *.log

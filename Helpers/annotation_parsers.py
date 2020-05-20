@@ -102,7 +102,7 @@ def adjust_frame(frame, cache_file=None):
         frame.loc[frame['Object Name'] == object_name, 'Object ID'] = object_id
         object_id += 1
     if cache_file:
-        frame.to_csv(os.path.join('..', 'Output', cache_file), index=False)
+        frame.to_csv(os.path.join('..', 'Output', 'Data', cache_file), index=False)
     print(f'Parsed labels:\n{frame["Object Name"].value_counts()}')
     return frame
 
@@ -119,7 +119,7 @@ def parse_voc_folder(folder_path, voc_conf):
         pandas DataFrame with the annotations.
     """
     assert os.path.exists(folder_path)
-    cache_path = os.path.join('..', 'Output', 'parsed_from_xml.csv')
+    cache_path = os.path.join('..', 'Output', 'Data', 'parsed_from_xml.csv')
     if os.path.exists(cache_path):
         frame = pd.read_csv(cache_path)
         print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
