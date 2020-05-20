@@ -41,7 +41,7 @@
   * [Stop and resume training support.](#stop-and-resume-training-support)
   * [Fully vectorized mAP evaluation.](#fully-vectorized-map-evaluation)
   * [`labelpix` support.](#labelpix-support)
-  * [Photo & video detection](photo-vid)
+  * [Photo & video detection](#photo--video-detection)
 
 * [Usage](#usage)
   * [Training](#training)
@@ -255,6 +255,11 @@ the tool can help and is supported by the detector. You can use csv files
 in the format mentioned [here](#csv-xml-annotation-parsers) as labels and load
 images if you need to preview any stage of the training/augmentation/evaluation/detection.
 
+### **Photo & video detection**
+
+Detections can be performed on photos or videos using Predictor class
+check [Predictor.md](/Docs/Predictor.md)
+
 ## **Usage**
 
 ### **Training**
@@ -284,7 +289,7 @@ copy label xml files to Data > Labels
 
     trainer = Trainer(
              input_shape=(416, 416, 3),
-             classes_file='../Config/beverly_hills.txt',
+             classes_file='/path/to/classes_file.txt',
              image_width=1344,  # The original image width
              image_height=756   # The original image height
     )
@@ -349,7 +354,7 @@ of the program.
              min_overlaps=0.5,
              new_dataset_conf=dataset_conf,  # check step 5
              new_anchors_conf=anchors_conf,  # check step 6
-             #  weights='path/to/weights'  # If you're using DarkNet weights or resuming training
+             #  weights='/path/to/weights'  # If you're using DarkNet weights or resuming training
              )
              
 
@@ -380,7 +385,7 @@ in xml VOC format, you can easily convert them using Helpers > annotation_parser
     
     
     aug = DataAugment(
-          labels_file='path/to/labels/csv/file',
+          labels_file='/path/to/labels/csv/file',
           augmentation_map=augmentations)
     aug.create_sequences(sequences)  # check the docs
     aug.augment_photo_folder()
@@ -429,6 +434,37 @@ Here are the most basic steps to evaluate a trained model:
 
 After evaluation, you'll find resulting plots and predictions in the Output folder.
 
+### **Detection**
+
+Here are the most basic steps to perform detection:
+
+1. Create an evaluation instance:
+
+        p = Detector(
+            (416, 416, 3),
+            '/path/to/classes_file.txt',
+            score_threshold=0.5,
+            iou_threshold=0.5,
+            max_boxes=100,
+            anchors=anchors  # Optional if not specified, yolo default anchors are used
+        )
+2. Perform detections:
+
+A) Photos:
+
+    photos = ['photo/path1', 'photo/path2']
+    p.predict_photos(photos=photos,
+                     trained_weights='/path/to/trained/weights')  # .tf or yolov3.weights(80 classes)
+
+B) Video
+
+    p.detect_video(
+        '/path/to/target/vid',
+        '/path/to/trained/weights.tf',
+    )
+
+After predictions is complete you'll find photos/video
+ in Output > Detections
 
 ## **Contributing**
 

@@ -179,7 +179,13 @@ class V3Model:
             x,
             lambda item: tf.reshape(
                 item,
-                (-1, tf.shape(item)[1], tf.shape(item)[2], 3, self.classes + 5),
+                (
+                    -1,
+                    tf.shape(item)[1],
+                    tf.shape(item)[2],
+                    3,
+                    self.classes + 5,
+                ),
             ),
         )
         return self.apply_func(Model, x_input, inputs, x)
@@ -238,6 +244,8 @@ class V3Model:
     def create_models(self):
         """
         Create training and inference yolov3 models.
+        Args:
+                layer configuration.
 
         Returns:
             training, inference models
@@ -325,7 +333,9 @@ class V3Model:
         detection_2 = x
         output_2 = self.output(detection_2, 128)
         self.training_model = Model(
-            input_initial, [output_0, output_1, output_2], name='training_model'
+            input_initial,
+            [output_0, output_1, output_2],
+            name='training_model',
         )
         boxes_0 = self.apply_func(
             Lambda,
@@ -369,9 +379,13 @@ class V3Model:
         Returns:
             None
         """
-        assert weights_file.split('.')[-1] in ['tf', 'weights'], 'Invalid weights file'
-        assert self.classes == 80 if weights_file.endswith('.weights') else 1, (
-            f'DarkNet model should contain 80 classes, {self.classes} is given.')
+        assert weights_file.split('.')[-1] in [
+            'tf',
+            'weights',
+        ], 'Invalid weights file'
+        assert (
+            self.classes == 80 if weights_file.endswith('.weights') else 1
+        ), f'DarkNet model should contain 80 classes, {self.classes} is given.'
         if weights_file.endswith('.tf'):
             self.training_model.load_weights(weights_file)
             default_logger.info(f'Loaded weights: {weights_file} ... success')
@@ -453,4 +467,3 @@ class V3Model:
             assert len(weights_data.read()) == 0, 'failed to read all data'
         default_logger.info(f'Loaded weights: {weights_file} ... success')
         print()
-

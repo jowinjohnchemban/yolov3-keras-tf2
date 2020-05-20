@@ -102,7 +102,9 @@ def adjust_frame(frame, cache_file=None):
         frame.loc[frame['Object Name'] == object_name, 'Object ID'] = object_id
         object_id += 1
     if cache_file:
-        frame.to_csv(os.path.join('..', 'Output', 'Data', cache_file), index=False)
+        frame.to_csv(
+            os.path.join('..', 'Output', 'Data', cache_file), index=False
+        )
     print(f'Parsed labels:\n{frame["Object Name"].value_counts()}')
     return frame
 
@@ -122,7 +124,10 @@ def parse_voc_folder(folder_path, voc_conf):
     cache_path = os.path.join('..', 'Output', 'Data', 'parsed_from_xml.csv')
     if os.path.exists(cache_path):
         frame = pd.read_csv(cache_path)
-        print(f'Labels retrieved from cache:\n{frame["Object Name"].value_counts()}')
+        print(
+            f'Labels retrieved from cache:'
+            f'\n{frame["Object Name"].value_counts()}'
+        )
         return frame
     image_data = []
     frame_columns = [
@@ -222,4 +227,3 @@ def adjust_non_voc_csv(csv_file, image_path, image_width, image_height):
             'Object ID',
         ]
     ]
-

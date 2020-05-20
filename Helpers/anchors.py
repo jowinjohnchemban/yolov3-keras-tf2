@@ -54,14 +54,16 @@ def k_means(relative_sizes, k, distance_func=np.median, frame=None):
     while True:
         distances = 1 - iou(relative_sizes, centroids, k)
         print(
-            f'Iteration: {iteration} Loss: {np.sum(np.abs(distances - old_distances))}'
+            f'Iteration: {iteration} Loss: '
+            f'{np.sum(np.abs(distances - old_distances))}'
         )
         old_distances = distances.copy()
         iteration += 1
         current_nearest = np.argmin(distances, axis=1)
         if (last_nearest == current_nearest).all():
             default_logger.info(
-                f'Generated {len(centroids)} anchors in {iteration} iterations'
+                f'Generated {len(centroids)} anchors in '
+                f'{iteration} iterations'
             )
             return centroids, frame
         for anchor in range(k):
@@ -83,4 +85,3 @@ def generate_anchors(width, height, centroids):
         2D array of resulting anchors.
     """
     return (centroids * np.array([width, height])).astype(int)
-

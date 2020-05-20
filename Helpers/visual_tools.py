@@ -24,8 +24,11 @@ def save_fig(title, save_figures=True):
         None
     """
     if save_figures:
-        saving_path = str(Path(os.path.join('..', 'Output', 'Plots',
-                                            f'{title}.png')).absolute().resolve())
+        saving_path = str(
+            Path(os.path.join('..', 'Output', 'Plots', f'{title}.png'))
+            .absolute()
+            .resolve()
+        )
         if os.path.exists(saving_path):
             return
         plt.savefig(saving_path)
@@ -44,8 +47,9 @@ def visualize_box_relative_sizes(frame, save_result=True):
         None
     """
     title = f'Relative width and height for {frame.shape[0]} boxes.'
-    if os.path.exists(os.path.join('..', 'Output', 'Plots', f'{title}.png')) or (
-            frame is None):
+    if os.path.exists(
+        os.path.join('..', 'Output', 'Plots', f'{title}.png')
+    ) or (frame is None):
         return
     sns.scatterplot(
         x=frame['Relative Width'],
@@ -71,8 +75,9 @@ def visualize_k_means_output(centroids, frame, save_result=True):
     title = (
         f'{centroids.shape[0]} Centroids representing relative anchor sizes.'
     )
-    if os.path.exists(os.path.join('..', 'Output', 'Plots', f'{title}.png')) or (
-            frame is None):
+    if os.path.exists(
+        os.path.join('..', 'Output', 'Plots', f'{title}.png')
+    ) or (frame is None):
         return
     fig, ax = plt.subplots()
     visualize_box_relative_sizes(frame)
@@ -126,10 +131,14 @@ def visualize_pr(calculated, save_results=True, fig_prefix=''):
     """
     for item in calculated['object_name'].drop_duplicates().values:
         plt.figure()
-        title = f'{fig_prefix} Precision and recall curve for {fig_prefix} {item}'
+        title = (
+            f'{fig_prefix} Precision and recall curve for {fig_prefix} {item}'
+        )
         plt.title(title)
         recall = calculated[calculated['object_name'] == item]['recall'].values
-        precision = calculated[calculated['object_name'] == item]['precision'].values
+        precision = calculated[calculated['object_name'] == item][
+            'precision'
+        ].values
         plt.plot(recall, precision)
         plt.xlabel('recall')
         plt.ylabel('precision')
@@ -158,17 +167,26 @@ def plot_compare_bar(col1, stats, fig_prefix='', col2=None):
         ax.barh(ind + width, stats[col2], width, color='blue', label=col2)
 
     ax.set(
-        yticks=ind + width, yticklabels=stats['Class Name'],
-        ylim=[2 * width - 1, len(stats)], title=(
-            f'{fig_prefix} {col1} vs {col2} evaluation results' if col2 else
-            f'{fig_prefix} {col1} evaluation results'
-        ))
+        yticks=ind + width,
+        yticklabels=stats['Class Name'],
+        ylim=[2 * width - 1, len(stats)],
+        title=(
+            f'{fig_prefix} {col1} vs {col2} evaluation results'
+            if col2
+            else f'{fig_prefix} {col1} evaluation results'
+        ),
+    )
     for patch in ax.patches:
         pw = patch.get_width()
         _, y = patch.get_xy()
         color = patch.get_facecolor()
-        ax.text(pw + 3, y + width/2, str(pw),
-                color=color, verticalalignment='center')
+        ax.text(
+            pw + 3,
+            y + width / 2,
+            str(pw),
+            color=color,
+            verticalalignment='center',
+        )
     ax.legend(loc='lower right')
 
 
@@ -201,6 +219,7 @@ def visualization_wrapper(to_visualize):
     Returns:
         to_visualize
     """
+
     def visualized(*args, **kwargs):
         result = to_visualize(*args, **kwargs)
         if to_visualize.__name__ in ['parse_voc_folder', 'adjust_non_voc_csv']:
@@ -212,8 +231,10 @@ def visualization_wrapper(to_visualize):
                 return result
             visualize_k_means_output(*result)
             plt.show()
-            visualize_boxes(result[0], os.path.join('..', 'Samples', 'sample_image.png'))
+            visualize_boxes(
+                result[0], os.path.join('..', 'Samples', 'sample_image.png')
+            )
             plt.show()
         return result
-    return visualized
 
+    return visualized

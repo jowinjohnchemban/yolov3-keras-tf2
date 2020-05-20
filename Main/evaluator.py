@@ -4,11 +4,17 @@ import numpy as np
 import tensorflow as tf
 import os
 import sys
+
 sys.path.append('..')
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Main.models import V3Model
 from Helpers.dataset_handlers import read_tfr, get_feature_map
-from Helpers.utils import transform_images, get_detection_data, default_logger, timer
+from Helpers.utils import (
+    transform_images,
+    get_detection_data,
+    default_logger,
+    timer,
+)
 from Helpers.visual_tools import visualize_pr, visualize_evaluation_stats
 
 
@@ -90,9 +96,13 @@ class Evaluator(V3Model):
         try:
             return next(dataset)
         except tf.errors.UnknownError as e:  # sometimes encountered when reading from google drive
-            default_logger.error(f'Error occurred during reading from dataset\n{e}')
+            default_logger.error(
+                f'Error occurred during reading from dataset\n{e}'
+            )
 
-    def predict_dataset(self, dataset, workers=16, split='train', batch_size=64):
+    def predict_dataset(
+        self, dataset, workers=16, split='train', batch_size=64
+    ):
         """
         Predict entire dataset.
         Args:
@@ -105,8 +115,10 @@ class Evaluator(V3Model):
             pandas DataFrame with entire dataset predictions.
         """
         predictions = []
-        sizes = {'train': self.train_dataset_size,
-                 'valid': self.valid_dataset_size}
+        sizes = {
+            'train': self.train_dataset_size,
+            'valid': self.valid_dataset_size,
+        }
         size = sizes[split]
         current_prediction = 0
         with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -136,8 +148,14 @@ class Evaluator(V3Model):
         return pd.concat(predictions)
 
     @timer(default_logger)
-    def make_predictions(self, trained_weights, merge=False, workers=16,
-                         shuffle_buffer=512, batch_size=64):
+    def make_predictions(
+        self,
+        trained_weights,
+        merge=False,
+        workers=16,
+        shuffle_buffer=512,
+        batch_size=64,
+    ):
         """
         Make predictions on both training and validation data sets
             and save results as csv in Output folder.
@@ -175,8 +193,12 @@ class Evaluator(V3Model):
         valid_dataset.shuffle(shuffle_buffer)
         train_dataset = iter(train_dataset)
         valid_dataset = iter(valid_dataset)
-        train_predictions = self.predict_dataset(train_dataset, workers, 'train', batch_size)
-        valid_predictions = self.predict_dataset(valid_dataset, workers, 'valid', batch_size)
+        train_predictions = self.predict_dataset(
+            train_dataset, workers, 'train', batch_size
+        )
+        valid_predictions = self.predict_dataset(
+            valid_dataset, workers, 'valid', batch_size
+        )
         if merge:
             predictions = pd.concat([train_predictions, valid_predictions])
             save_path = os.path.join(
@@ -225,10 +247,14 @@ class Evaluator(V3Model):
         if detections.empty:
             raise ValueError(f'Empty predictions frame')
         if isinstance(min_overlaps, float):
-            assert 0 <= min_overlaps < 1, (f'min_overlaps should be '
-                                           f'between 0 and 1, {min_overlaps} is given')
+            assert 0 <= min_overlaps < 1, (
+                f'min_overlaps should be '
+                f'between 0 and 1, {min_overlaps} is given'
+            )
         if isinstance(min_overlaps, dict):
-            assert all([0 < min_overlap < 1 for min_overlap in min_overlaps.values()])
+            assert all(
+                [0 < min_overlap < 1 for min_overlap in min_overlaps.values()]
+            )
             assert all([obj in min_overlaps for obj in self.class_names]), (
                 f'{[item for item in self.class_names if item not in min_overlaps]} '
                 f'are missing in min_overlaps'
@@ -244,8 +270,9 @@ class Evaluator(V3Model):
             )
             detections['detection_key'] = detection_keys
         total_frame = actual.merge(detections, on=['image', 'object_name'])
-        assert not total_frame.empty, (
-            'No common image names found between actual and detections')
+        assert (
+            not total_frame.empty
+        ), 'No common image names found between actual and detections'
         total_frame['x_max_common'] = total_frame[['X_max', 'x2']].min(1)
         total_frame['x_min_common'] = total_frame[['X_min', 'x1']].max(1)
         total_frame['y_max_common'] = total_frame[['Y_max', 'y2']].min(1)
@@ -359,7 +386,14 @@ class Evaluator(V3Model):
         ]
         return pd.concat([true_positive, false_positive])
 
-    def calculate_stats(self, actual_data, detection_data, true_positives, false_positives, combined):
+    def calculate_stats(
+        self,
+        actual_data,
+        detection_data,
+        true_positives,
+        false_positives,
+        combined,
+    ):
         """
         Calculate prediction statistics for every class in self.class_names.
         Args:
@@ -377,19 +411,30 @@ class Evaluator(V3Model):
             stats = dict()
             stats['Class Name'] = class_name
             stats['Average Precision'] = (
-                    combined[combined['object_name'] == class_name]
-                    ['average_precision'].sum() * 100)
+                combined[combined['object_name'] == class_name][
+                    'average_precision'
+                ].sum()
+                * 100
+            )
             stats['Actual'] = len(
-                actual_data[actual_data["Object Name"] == class_name])
+                actual_data[actual_data["Object Name"] == class_name]
+            )
             stats['Detections'] = len(
-                detection_data[detection_data["object_name"] == class_name])
+                detection_data[detection_data["object_name"] == class_name]
+            )
             stats['True Positives'] = len(
-                true_positives[true_positives["object_name"] == class_name])
+                true_positives[true_positives["object_name"] == class_name]
+            )
             stats['False Positives'] = len(
-                false_positives[false_positives["object_name"] == class_name])
-            stats['Combined'] = len(combined[combined["object_name"] == class_name])
+                false_positives[false_positives["object_name"] == class_name]
+            )
+            stats['Combined'] = len(
+                combined[combined["object_name"] == class_name]
+            )
             class_stats.append(stats)
-        total_stats = pd.DataFrame(class_stats).sort_values(by='Average Precision', ascending=False)
+        total_stats = pd.DataFrame(class_stats).sort_values(
+            by='Average Precision', ascending=False
+        )
         return total_stats
 
     @staticmethod
@@ -403,22 +448,36 @@ class Evaluator(V3Model):
         Returns:
             pandas DataFrame with average precisions calculated.
         """
-        combined = combined.sort_values(by='score', ascending=False).reset_index(drop=True)
+        combined = combined.sort_values(
+            by='score', ascending=False
+        ).reset_index(drop=True)
         combined['acc_tp'] = combined['true_positive'].cumsum()
         combined['acc_fp'] = combined['false_positive'].cumsum()
-        combined['precision'] = combined['acc_tp'] / (combined['acc_tp'] + combined['acc_fp'])
+        combined['precision'] = combined['acc_tp'] / (
+            combined['acc_tp'] + combined['acc_fp']
+        )
         combined['recall'] = combined['acc_tp'] / total_actual
         combined['m_pre1'] = combined['precision'].shift(1, fill_value=0)
         combined['m_pre'] = combined[['m_pre1', 'precision']].max(axis=1)
         combined['m_rec1'] = combined['recall'].shift(1, fill_value=0)
-        combined.loc[combined['m_rec1'] != combined['recall'], 'valid_m_rec'] = 1
-        combined['average_precision'] = (combined['recall'] - combined['m_rec1']) * combined['m_pre']
+        combined.loc[
+            combined['m_rec1'] != combined['recall'], 'valid_m_rec'
+        ] = 1
+        combined['average_precision'] = (
+            combined['recall'] - combined['m_rec1']
+        ) * combined['m_pre']
         return combined
 
     @timer(default_logger)
     def calculate_map(
-        self, prediction_data, actual_data, min_overlaps, display_stats=False, fig_prefix='',
-            save_figs=True, plot_results=True
+        self,
+        prediction_data,
+        actual_data,
+        min_overlaps,
+        display_stats=False,
+        fig_prefix='',
+        save_figs=True,
+        plot_results=True,
     ):
         """
         Calculate mAP(mean average precision) for the trained model.
@@ -449,15 +508,28 @@ class Evaluator(V3Model):
         combined = self.combine_results(true_positives, false_positives)
         class_groups = combined.groupby('object_name')
         calculated = pd.concat(
-            [self.calculate_ap(group, class_counts.get(object_name))
-             for object_name, group in class_groups])
+            [
+                self.calculate_ap(group, class_counts.get(object_name))
+                for object_name, group in class_groups
+            ]
+        )
         stats = self.calculate_stats(
-                actual_data, prediction_data, true_positives, false_positives, calculated)
+            actual_data,
+            prediction_data,
+            true_positives,
+            false_positives,
+            calculated,
+        )
         map_score = stats['Average Precision'].mean()
         if display_stats:
-            pd.set_option('display.max_rows', None,
-                          'display.max_columns', None,
-                          'display.width', None)
+            pd.set_option(
+                'display.max_rows',
+                None,
+                'display.max_columns',
+                None,
+                'display.width',
+                None,
+            )
             print(stats.sort_values(by='Average Precision', ascending=False))
             print(f'mAP score: {map_score}%')
             pd.reset_option('display.[max_rows, max_columns, width]')
@@ -465,53 +537,3 @@ class Evaluator(V3Model):
             visualize_pr(calculated, save_figs, fig_prefix)
             visualize_evaluation_stats(stats, fig_prefix)
         return stats, map_score
-
-
-if __name__ == '__main__':
-    anc = np.array(
-        [[60, 112],
-         [530, 198],
-         [111, 57],
-         [332, 320],
-         [134, 109],
-         [141, 331],
-         [294, 247],
-         [118, 205],
-         [200, 378]]
-    )
-    ev = Evaluator(
-        (416, 416, 3),
-        '../../bhills_train.tfrecord',
-        '../../bhills_test.tfrecord',
-        '../Config/beverly_hills.txt',
-        anc,
-        score_threshold=0.1
-    )
-    ev.make_predictions('../../../beverly_hills/models/beverly_hills_model.tf', merge=True)
-    # ovs = {
-    #     'Car': 0.55,
-    #     'Street Sign': 0.5,
-    #     'Palm Tree': 0.5,
-    #     'Street Lamp': 0.5,
-    #     'Minivan': 0.5,
-    #     'Traffic Lights': 0.5,
-    #     'Pedestrian': 0.5,
-    #     'Fire Hydrant': 0.5,
-    #     'Flag': 0.5,
-    #     'Trash Can': 0.5,
-    #     'Bicycle': 0.5,
-    #     'Bus': 0.5,
-    #     'Pickup Truck': 0.5,
-    #     'Road Block': 0.5,
-    #     'Delivery Truck': 0.5,
-    #     'Motorcycle': 0.5,
-    # }
-    # actual = pd.read_csv('../out/2/Output/full_data.csv')
-    # preds = pd.read_csv('../out/2/Output/full_dataset_predictions.csv')
-    # print(actual)
-    # print(preds)
-    # ev.calculate_map(preds, actual, 0.5, True, plot_results=False)
-
-
-
-

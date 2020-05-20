@@ -8,6 +8,12 @@ from Helpers.utils import default_logger
 
 
 def get_feature_map():
+    """
+    Get tf.train.Example features.
+
+    Returns:
+        features
+    """
     features = {
         'image_width': tf.io.FixedLenFeature([], tf.int64),
         'image_height': tf.io.FixedLenFeature([], tf.int64),
@@ -198,12 +204,16 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
     Returns:
         None
     """
-    data['Object Name'] = data['Object Name'].apply(lambda x: x.encode('utf-8'))
+    data['Object Name'] = data['Object Name'].apply(
+        lambda x: x.encode('utf-8')
+    )
     data['Object ID'] = data['Object ID'].astype(int)
     data[data.dtypes[data.dtypes == 'int64'].index] = data[
         data.dtypes[data.dtypes == 'int64'].index
     ].apply(abs)
-    data.to_csv(os.path.join('..', 'Data', 'TFRecords', 'full_data.csv'), index=False)
+    data.to_csv(
+        os.path.join('..', 'Data', 'TFRecords', 'full_data.csv'), index=False
+    )
     groups = np.array(data.groupby('Image Path'))
     np.random.shuffle(groups)
     if test_size:
@@ -215,13 +225,24 @@ def save_tfr(data, output_folder, dataset_name, test_size=None, trainer=None):
         test_set = groups[separation_index:]
         training_frame = pd.concat([item[1] for item in training_set])
         test_frame = pd.concat([item[1] for item in test_set])
-        training_frame.to_csv(os.path.join('..', 'Data', 'TFRecords', 'training_data.csv'), index=False)
-        test_frame.to_csv(os.path.join('..', 'Data', 'TFRecords', 'test_data.csv'), index=False)
-        training_path = str(Path(os.path.join(
-            output_folder, f'{dataset_name}_train.tfrecord'
-        )).absolute().resolve())
-        test_path = str(Path(os.path.join(
-            output_folder, f'{dataset_name}_test.tfrecord')).absolute().resolve())
+        training_frame.to_csv(
+            os.path.join('..', 'Data', 'TFRecords', 'training_data.csv'),
+            index=False,
+        )
+        test_frame.to_csv(
+            os.path.join('..', 'Data', 'TFRecords', 'test_data.csv'),
+            index=False,
+        )
+        training_path = str(
+            Path(os.path.join(output_folder, f'{dataset_name}_train.tfrecord'))
+            .absolute()
+            .resolve()
+        )
+        test_path = str(
+            Path(os.path.join(output_folder, f'{dataset_name}_test.tfrecord'))
+            .absolute()
+            .resolve()
+        )
         write_tf_record(training_path, training_set, data, trainer)
         default_logger.info(f'Saved training TFRecord: {training_path}')
         write_tf_record(test_path, test_set, data, trainer)
@@ -268,4 +289,3 @@ def read_tfr(
             x, feature_map, class_table, max_boxes, new_size, get_features
         )
     )
-

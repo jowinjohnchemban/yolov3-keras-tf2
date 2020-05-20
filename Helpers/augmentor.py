@@ -57,7 +57,9 @@ class DataAugment:
                 f'Augmentation aborted: no photos found in {self.image_folder}'
             )
             raise ValueError(f'No photos given')
-        self.image_width, self.image_height = imagesize.get(self.image_paths[0])
+        self.image_width, self.image_height = imagesize.get(
+            self.image_paths[0]
+        )
         self.converted_coordinates = (
             pd.read_csv(converted_coordinates_file)
             if converted_coordinates_file
@@ -281,7 +283,9 @@ class DataAugment:
                 paths.append(image_path)
         return np.array(loaded), paths
 
-    def update_data(self, bbs_aug, frame_before, image_aug, new_name, new_path):
+    def update_data(
+        self, bbs_aug, frame_before, image_aug, new_name, new_path
+    ):
         """
         Update new bounding boxes data and save augmented image.
         Args:
@@ -353,14 +357,18 @@ class DataAugment:
             current_sequence += 1
             self.augmented_images += 1
         current = os.path.basename(image_path)
-        completed = f'{self.augmented_images}/{self.total_images * len(self.augmentation_sequences)}'
+        completed = (
+            f'{self.augmented_images}/'
+            f'{self.total_images * len(self.augmentation_sequences)}'
+        )
         percent = (
-            self.augmented_images / (
-                self.total_images * len(self.augmentation_sequences))
+            self.augmented_images
+            / (self.total_images * len(self.augmentation_sequences))
             * 100
         )
         print(
-            f'\raugmenting {current}\t{completed}\t{percent}% completed', end=''
+            f'\raugmenting {current}\t{completed}\t{percent}% completed',
+            end='',
         )
 
     @timer(default_logger)
@@ -374,7 +382,9 @@ class DataAugment:
         Returns:
             None
         """
-        default_logger.info(f'Started augmentation with {self.workers} workers')
+        default_logger.info(
+            f'Started augmentation with {self.workers} workers'
+        )
         default_logger.info(f'Total images to augment: {self.total_images}')
         default_logger.info(f'Session assigned id: {self.session_id}')
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
@@ -512,4 +522,3 @@ class DataAugment:
                     )
             except Exception as e:
                 print(f'{e} for {item}')
-

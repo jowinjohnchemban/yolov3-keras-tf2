@@ -157,7 +157,10 @@ augmentations = {
             "no": 28,
             "augmentation": """iaa.Dropout2d(p=0.5, nb_keep_channels=0)""",
         },
-        {"no": 29, "augmentation": """iaa.ReplaceElementwise(0.1, [0, 255])"""},
+        {
+            "no": 29,
+            "augmentation": """iaa.ReplaceElementwise(0.1, [0, 255])""",
+        },
         {
             "no": 30,
             "augmentation": """iaa.ReplaceElementwise(0.1, [0, 255], per_channel=0.5)""",
@@ -483,7 +486,10 @@ augmentations = {
             from_colorspace=iaa.ChangeColorspace.BGR, to_colorspace=[
                 iaa.ChangeColorspace.RGB, iaa.ChangeColorspace.HSV])""",
         },
-        {"no": 33, "augmentation": """iaa.UniformColorQuantizationToNBits()"""},
+        {
+            "no": 33,
+            "augmentation": """iaa.UniformColorQuantizationToNBits()""",
+        },
         {
             "no": 34,
             "augmentation": """iaa.UniformColorQuantizationToNBits(nb_bits=(2, 8))""",
@@ -750,7 +756,10 @@ augmentations = {
         },
     ],
     "pi_like": [
-        {"no": 1, "augmentation": """iaa.Solarize(0.5, threshold=(32, 128))"""},
+        {
+            "no": 1,
+            "augmentation": """iaa.Solarize(0.5, threshold=(32, 128))""",
+        },
         {"no": 2, "augmentation": """iaa.pillike.Equalize()"""},
         {"no": 3, "augmentation": """iaa.pillike.Autocontrast()"""},
         {
@@ -787,7 +796,10 @@ augmentations = {
     ],
     "pooling": [
         {"no": 1, "augmentation": """iaa.AveragePooling(2)"""},
-        {"no": 2, "augmentation": """iaa.AveragePooling(2, keep_size=False)"""},
+        {
+            "no": 2,
+            "augmentation": """iaa.AveragePooling(2, keep_size=False)""",
+        },
         {"no": 3, "augmentation": """iaa.AveragePooling([2, 8])"""},
         {"no": 4, "augmentation": """iaa.AveragePooling((1, 7))"""},
         {"no": 5, "augmentation": """iaa.AveragePooling(((1, 7), (1, 7)))"""},
@@ -802,7 +814,10 @@ augmentations = {
         {"no": 14, "augmentation": """iaa.MinPooling((1, 7))"""},
         {"no": 15, "augmentation": """iaa.MinPooling(((1, 7), (1, 7)))"""},
         {"no": 16, "augmentation": """iaa.MedianPooling(2)"""},
-        {"no": 17, "augmentation": """iaa.MedianPooling(2, keep_size=False)"""},
+        {
+            "no": 17,
+            "augmentation": """iaa.MedianPooling(2, keep_size=False)""",
+        },
         {"no": 18, "augmentation": """iaa.MedianPooling([2, 8])"""},
         {"no": 19, "augmentation": """iaa.MedianPooling((1, 7))"""},
         {"no": 20, "augmentation": """iaa.MedianPooling(((1, 7), (1, 7)))"""},

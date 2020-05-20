@@ -17,6 +17,7 @@ from lxml import etree
 def get_logger():
     """
     Initialize logger configuration.
+
     Returns:
         logger.
     """
@@ -42,6 +43,14 @@ default_logger = get_logger()
 
 
 def timer(logger):
+    """
+    Timer wrapper.
+    logger: logging.RootLogger object
+
+    Returns:
+        timed
+    """
+
     def timed(func):
         def wrapper(*args, **kwargs):
             start_time = perf_counter()
@@ -244,7 +253,9 @@ def calculate_loss(anchors, classes=80, ignore_thresh=0.5):
             * tf.reduce_sum(tf.square(true_wh - pred_wh), axis=-1)
         )
         obj_loss = binary_crossentropy(true_obj, pred_obj)
-        obj_loss = obj_mask * obj_loss + (1 - obj_mask) * ignore_mask * obj_loss
+        obj_loss = (
+            obj_mask * obj_loss + (1 - obj_mask) * ignore_mask * obj_loss
+        )
         class_loss = obj_mask * sparse_categorical_crossentropy(
             true_class_idx, pred_class
         )
@@ -306,7 +317,7 @@ def get_detection_data(image, image_name, outputs, class_names):
         boxes, scores, classes = [
             item[0][: int(nums)].numpy() for item in outputs[:-1]
         ]
-    w, h = np.flip(image.shape[0: 2])
+    w, h = np.flip(image.shape[0:2])
     data = pd.DataFrame(boxes, columns=['x1', 'y1', 'x2', 'y2'])
     data[['x1', 'x2']] = (data[['x1', 'x2']] * w).astype('int64')
     data[['y1', 'y2']] = (data[['y1', 'y2']] * h).astype('int64')
@@ -370,15 +381,45 @@ def calculate_ratios(x1, y1, x2, y2, width, height):
     return bx, by, bw, bh
 
 
-def calculate_display_data(prediction_file, classes_file, img_width, img_height, out):
+def calculate_display_data(
+    prediction_file, classes_file, img_width, img_height, out
+):
+    """
+    Convert coordinates to relative labels.
+
+    prediction_file: csv file containing label coordinates.
+    classes_file: .txt file containing object classes.
+    img_width: Image width.
+    img_height: Image height.
+    out: Output path.
+
+    Returns:
+         None
+    """
     preds = pd.read_csv(prediction_file)
     rows = []
-    indices = {item: ind for ind, item in enumerate([item.strip() for item in open(
-        classes_file).readlines()])}
+    indices = {
+        item: ind
+        for ind, item in enumerate(
+            [item.strip() for item in open(classes_file).readlines()]
+        )
+    }
     for ind, item in preds.iterrows():
         img, obj, xx1, yy1, xx2, yy2, score, imgw, imgh, dk = item.values
-        bxx, byy, bww, bhh = calculate_ratios(xx1, yy1, xx2, yy2, img_width, img_height)
+        bxx, byy, bww, bhh = calculate_ratios(
+            xx1, yy1, xx2, yy2, img_width, img_height
+        )
         rows.append([img, obj, indices[obj], bxx, byy, bww, bhh])
-    fr = pd.DataFrame(rows, columns=[
-        'Image', 'Object Name', 'Object Index', 'bx', 'by', 'bw', 'bh'])
+    fr = pd.DataFrame(
+        rows,
+        columns=[
+            'Image',
+            'Object Name',
+            'Object Index',
+            'bx',
+            'by',
+            'bw',
+            'bh',
+        ],
+    )
     fr.to_csv(out, index=False)

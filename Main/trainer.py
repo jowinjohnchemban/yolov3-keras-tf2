@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import sys
+
 sys.path.append('..')
 from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
     ModelCheckpoint,
     Callback,
-    EarlyStopping
+    EarlyStopping,
 )
 import shutil
 from Helpers.dataset_handlers import read_tfr, save_tfr, get_feature_map
@@ -111,7 +112,10 @@ class Trainer(V3Model):
                 os.path.join('..', 'Data', 'XML Labels'),
                 os.path.join('..', 'Config', 'voc_conf.json'),
             )
-            labels_frame.to_csv(os.path.join('..', 'Output', 'Data', 'parsed_from_xml.csv'), index=False)
+            labels_frame.to_csv(
+                os.path.join('..', 'Output', 'Data', 'parsed_from_xml.csv'),
+                index=False,
+            )
             check += 1
         if configuration.get('adjusted_frame'):
             if check:
@@ -248,9 +252,17 @@ class Trainer(V3Model):
         )
 
     @timer(default_logger)
-    def evaluate(self, weights_file, merge, workers, shuffle_buffer,
-                 min_overlaps, display_stats=True, plot_stats=True,
-                 save_figs=True):
+    def evaluate(
+        self,
+        weights_file,
+        merge,
+        workers,
+        shuffle_buffer,
+        min_overlaps,
+        display_stats=True,
+        plot_stats=True,
+        save_figs=True,
+    ):
         """
         Evaluate on training and validation datasets.
         Args:
@@ -270,33 +282,66 @@ class Trainer(V3Model):
             stats, map_score.
         """
         default_logger.info('Starting evaluation ...')
-        evaluator = Evaluator(self.input_shape, self.train_tf_record, self.valid_tf_record,
-                              self.classes_file, self.anchors, self.masks, self.max_boxes,
-                              self.iou_threshold, self.score_threshold)
-        predictions = evaluator.make_predictions(weights_file, merge, workers, shuffle_buffer)
+        evaluator = Evaluator(
+            self.input_shape,
+            self.train_tf_record,
+            self.valid_tf_record,
+            self.classes_file,
+            self.anchors,
+            self.masks,
+            self.max_boxes,
+            self.iou_threshold,
+            self.score_threshold,
+        )
+        predictions = evaluator.make_predictions(
+            weights_file, merge, workers, shuffle_buffer
+        )
         if isinstance(predictions, tuple):
             training_predictions, valid_predictions = predictions
             if any([training_predictions.empty, valid_predictions.empty]):
-                default_logger.info('Aborting evaluations, no detections found')
+                default_logger.info(
+                    'Aborting evaluations, no detections found'
+                )
                 return
-            training_actual = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'training_data.csv'))
-            valid_actual = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'test_data.csv'))
+            training_actual = pd.read_csv(
+                os.path.join('..', 'Data', 'TFRecords', 'training_data.csv')
+            )
+            valid_actual = pd.read_csv(
+                os.path.join('..', 'Data', 'TFRecords', 'test_data.csv')
+            )
             training_stats, training_map = evaluator.calculate_map(
-                training_predictions, training_actual, min_overlaps, display_stats, 'Train',
-                save_figs, plot_stats
+                training_predictions,
+                training_actual,
+                min_overlaps,
+                display_stats,
+                'Train',
+                save_figs,
+                plot_stats,
             )
             valid_stats, valid_map = evaluator.calculate_map(
-                valid_predictions, valid_actual, min_overlaps, display_stats,
-                'Valid', save_figs, plot_stats
+                valid_predictions,
+                valid_actual,
+                min_overlaps,
+                display_stats,
+                'Valid',
+                save_figs,
+                plot_stats,
             )
             return training_stats, training_map, valid_stats, valid_map
-        actual_data = pd.read_csv(os.path.join('..', 'Data', 'TFRecords', 'full_data.csv'))
+        actual_data = pd.read_csv(
+            os.path.join('..', 'Data', 'TFRecords', 'full_data.csv')
+        )
         if predictions.empty:
             default_logger.info('Aborting evaluations, no detections found')
             return
         stats, map_score = evaluator.calculate_map(
-            predictions, actual_data, min_overlaps, display_stats, save_figs=save_figs,
-            plot_results=plot_stats)
+            predictions,
+            actual_data,
+            min_overlaps,
+            display_stats,
+            save_figs=save_figs,
+            plot_results=plot_stats,
+        )
         return stats, map_score
 
     @staticmethod
@@ -309,7 +354,11 @@ class Trainer(V3Model):
         """
         for file_name in os.listdir(os.path.join('..', 'Output')):
             if not file_name.startswith('.'):
-                full_path = Path(os.path.join('..', 'Output', file_name)).absolute().resolve()
+                full_path = (
+                    Path(os.path.join('..', 'Output', file_name))
+                    .absolute()
+                    .resolve()
+                )
                 if os.path.isdir(full_path):
                     shutil.rmtree(full_path)
                 else:
@@ -379,7 +428,7 @@ class Trainer(V3Model):
                 save_weights_only=True,
             ),
             TensorBoard(log_dir=os.path.join('..', 'Logs')),
-            EarlyStopping(monitor='val_loss', patience=6, verbose=1)
+            EarlyStopping(monitor='val_loss', patience=6, verbose=1),
         ]
 
     @timer(default_logger)
@@ -401,7 +450,7 @@ class Trainer(V3Model):
         plot_stats=True,
         save_figs=True,
         clear_outputs=False,
-        n_epoch_eval=None
+        n_epoch_eval=None,
     ):
         """
         Train on the dataset.
@@ -453,19 +502,39 @@ class Trainer(V3Model):
         )
         optimizer = tf.keras.optimizers.Adam(learning_rate)
         loss = [
-            calculate_loss(self.anchors[mask], self.classes, self.iou_threshold)
+            calculate_loss(
+                self.anchors[mask], self.classes, self.iou_threshold
+            )
             for mask in self.masks
         ]
         self.training_model.compile(optimizer=optimizer, loss=loss)
-        checkpoint_name = os.path.join('..', 'Models', f'{dataset_name or "trained"}_model.tf')
+        checkpoint_name = os.path.join(
+            '..', 'Models', f'{dataset_name or "trained"}_model.tf'
+        )
         callbacks = self.create_callbacks(checkpoint_name)
         if n_epoch_eval:
             mid_train_eval = MidTrainingEvaluator(
-                self.input_shape, self.classes_file, self.image_width, self.image_height,
-                self.train_tf_record, self.valid_tf_record, self.anchors, self.masks,
-                self.max_boxes, self.iou_threshold, self.score_threshold, n_epoch_eval,
-                merge_evaluation, evaluation_workers, shuffle_buffer, min_overlaps, display_stats,
-                plot_stats, save_figs, checkpoint_name)
+                self.input_shape,
+                self.classes_file,
+                self.image_width,
+                self.image_height,
+                self.train_tf_record,
+                self.valid_tf_record,
+                self.anchors,
+                self.masks,
+                self.max_boxes,
+                self.iou_threshold,
+                self.score_threshold,
+                n_epoch_eval,
+                merge_evaluation,
+                evaluation_workers,
+                shuffle_buffer,
+                min_overlaps,
+                display_stats,
+                plot_stats,
+                save_figs,
+                checkpoint_name,
+            )
             callbacks.append(mid_train_eval)
         history = self.training_model.fit(
             training_dataset,
@@ -475,38 +544,142 @@ class Trainer(V3Model):
         )
         default_logger.info('Training complete')
         if evaluate:
-            evaluations = self.evaluate(checkpoint_name,
-                                        merge_evaluation, evaluation_workers,
-                                        shuffle_buffer, min_overlaps, display_stats,
-                                        plot_stats, save_figs)
+            evaluations = self.evaluate(
+                checkpoint_name,
+                merge_evaluation,
+                evaluation_workers,
+                shuffle_buffer,
+                min_overlaps,
+                display_stats,
+                plot_stats,
+                save_figs,
+            )
             return evaluations, history
         return history
 
 
 class MidTrainingEvaluator(Callback, Trainer):
+    """
+    Tool to evaluate trained model on the go(during the training, every n epochs).
+    """
+
     def __init__(
-            self, input_shape, classes_file, image_width, image_height,
-            train_tf_record, valid_tf_record, anchors, masks,
-            max_boxes, iou_threshold, score_threshold, n_epochs, merge,
-            workers, shuffle_buffer, min_overlaps, display_stats, plot_stats, save_figs,
-            weights_file
+        self,
+        input_shape,
+        classes_file,
+        image_width,
+        image_height,
+        train_tf_record,
+        valid_tf_record,
+        anchors,
+        masks,
+        max_boxes,
+        iou_threshold,
+        score_threshold,
+        n_epochs,
+        merge,
+        workers,
+        shuffle_buffer,
+        min_overlaps,
+        display_stats,
+        plot_stats,
+        save_figs,
+        weights_file,
     ):
-        Trainer.__init__(self, input_shape, classes_file, image_width, image_height,
-                         train_tf_record, valid_tf_record, anchors, masks,
-                         max_boxes, iou_threshold, score_threshold)
+        """
+        Initialize mid-training evaluation settings.
+        Args:
+            input_shape: tuple, (n, n, c)
+            classes_file: File containing class names \n delimited.
+            image_width: Width of the original image.
+            image_height: Height of the original image.
+            train_tf_record: TFRecord file.
+            valid_tf_record: TFRecord file.
+            anchors: numpy array of (w, h) pairs.
+            masks: numpy array of masks.
+            max_boxes: Maximum boxes of the TFRecords provided(if any) or
+                maximum boxes setting.
+            iou_threshold: float, values less than the threshold are ignored.
+            score_threshold: float, values less than the threshold are ignored.
+            n_epochs: int, perform evaluation every n epochs
+            merge: If True, The whole dataset(train + valid) will be evaluated
+            workers: Parallel predictions
+            shuffle_buffer: Buffer size for shuffling datasets
+            min_overlaps: a float value between 0 and 1, or a dictionary
+                containing each class in self.class_names mapped to its
+                minimum overlap
+            display_stats: If True, statistics will be displayed at the end.
+            plot_stats: If True, precision and recall curves as well as
+                comparison bar charts will be plotted.
+            save_figs: If True and display_stats, plots will be save to Output folder
+            weights_file: .tf file(most recent checkpoint)
+        """
+        Trainer.__init__(
+            self,
+            input_shape,
+            classes_file,
+            image_width,
+            image_height,
+            train_tf_record,
+            valid_tf_record,
+            anchors,
+            masks,
+            max_boxes,
+            iou_threshold,
+            score_threshold,
+        )
         self.n_epochs = n_epochs
-        self.evaluation_args = [weights_file, merge, workers, shuffle_buffer, min_overlaps,
-                                display_stats, plot_stats, save_figs]
+        self.evaluation_args = [
+            weights_file,
+            merge,
+            workers,
+            shuffle_buffer,
+            min_overlaps,
+            display_stats,
+            plot_stats,
+            save_figs,
+        ]
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+        Start evaluation in valid epochs.
+        Args:
+            epoch: int, epoch number.
+            logs: dict, Tensorboard log.
+
+        Returns:
+            None
+        """
         if not (epoch + 1) % self.n_epochs == 0:
             return
         self.evaluate(*self.evaluation_args)
-        os.mkdir(os.path.join('..', 'Output', 'Evaluation', f'epoch-{epoch}-evaluation'))
-        for file_name in os.listdir(os.path.join('..', 'Output', 'Evaluation')):
-            if not os.path.isdir(file_name) and (file_name.endswith('.png') or 'prediction' in file_name):
-                full_path = str(Path(os.path.join(
-                    '..', 'Output', 'Evaluation', file_name)).absolute().resolve())
-                new_path = str(Path(os.path.join(
-                    '..', 'Output', 'Evaluation', f'epoch-{epoch}-evaluation', file_name)).absolute().resolve())
+        os.mkdir(
+            os.path.join(
+                '..', 'Output', 'Evaluation', f'epoch-{epoch}-evaluation'
+            )
+        )
+        for file_name in os.listdir(
+            os.path.join('..', 'Output', 'Evaluation')
+        ):
+            if not os.path.isdir(file_name) and (
+                file_name.endswith('.png') or 'prediction' in file_name
+            ):
+                full_path = str(
+                    Path(os.path.join('..', 'Output', 'Evaluation', file_name))
+                    .absolute()
+                    .resolve()
+                )
+                new_path = str(
+                    Path(
+                        os.path.join(
+                            '..',
+                            'Output',
+                            'Evaluation',
+                            f'epoch-{epoch}-evaluation',
+                            file_name,
+                        )
+                    )
+                    .absolute()
+                    .resolve()
+                )
                 shutil.move(full_path, new_path)
